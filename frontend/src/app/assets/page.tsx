@@ -7,11 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useAssets, useCreateAsset, useUpdateAsset, useDeleteAsset } from "@/hooks/use-wealth";
+import { useAssets, useCreateAsset, useUpdateAsset, useDeleteAsset, useLiabilities, useCreateLiability } from "@/hooks/use-wealth";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Trash2, Pencil, X, Check } from "lucide-react";
-import { ASSET_CLASSES, LIQUIDITY_CATEGORIES } from "@/types";
+import { Plus, Trash2, Pencil, X, Check, LinkIcon } from "lucide-react";
+import { ASSET_CLASSES, LIQUIDITY_CATEGORIES, LIABILITY_TYPES } from "@/types";
 import type { Asset } from "@/types";
+
+const LIABILITY_LABELS: Record<string, string> = {
+  mortgage: "Mortgage", loan: "Loan", credit_card: "Credit Card",
+  tax: "Tax", margin: "Margin", business_debt: "Business Debt", other: "Other",
+};
 
 const CLASS_LABELS: Record<string, string> = {
   cash: "Cash", stock: "Stocks", etf: "ETFs", mutual_fund: "Mutual Funds",
@@ -30,9 +35,13 @@ export default function AssetsPage() {
   const createAsset = useCreateAsset();
   const updateAsset = useUpdateAsset();
   const deleteAsset = useDeleteAsset();
+  const { data: liabilities } = useLiabilities();
+  const createLiability = useCreateLiability();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: "", current_value: "", currency: "", liquidity_category: "", country: "", notes: "", asset_class: "" });
+  const [linkingAssetId, setLinkingAssetId] = useState<string | null>(null);
+  const [liabilityForm, setLiabilityForm] = useState({ name: "", liability_type: "mortgage", current_balance: "", interest_rate: "", monthly_payment: "", notes: "" });
   const [filter, setFilter] = useState<string>("");
   const [form, setForm] = useState({
     name: "", asset_class: "cash", current_value: "",
@@ -271,53 +280,147 @@ export default function AssetsPage() {
                         </div>
                       </div>
                     ) : (
-                      <div key={asset.id} className="flex items-center justify-between rounded-md border px-4 py-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{asset.name}</span>
-                            {asset.symbol && (
-                              <Badge variant="secondary" className="text-xs">{asset.symbol}</Badge>
-                            )}
-                            <Badge variant="secondary" className="text-xs">
-                              {LIQUIDITY_LABELS[asset.liquidity_category] || asset.liquidity_category}
-                            </Badge>
+                      <div key={asset.id} className="space-y-0">
+                        <div className="flex items-center justify-between rounded-md border px-4 py-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">{asset.name}</span>
+                              {asset.symbol && (
+                                <Badge variant="secondary" className="text-xs">{asset.symbol}</Badge>
+                              )}
+                              <Badge variant="secondary" className="text-xs">
+                                {LIQUIDITY_LABELS[asset.liquidity_category] || asset.liquidity_category}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-neutral-500 mt-0.5">
+                              {asset.currency}
+                              {asset.country ? ` · ${asset.country}` : ""}
+                              {asset.notes ? ` · ${asset.notes}` : ""}
+                            </div>
+                            {/* Show linked liabilities */}
+                            {liabilities?.filter((l) => l.linked_asset_id === asset.id).map((l) => (
+                              <div key={l.id} className="flex items-center gap-2 mt-1.5">
+                                <LinkIcon className="h-3 w-3 text-red-400" />
+                                <span className="text-xs text-red-600 font-medium">
+                                  {l.name}: {formatCurrency(l.current_balance, l.currency)}
+                                </span>
+                                {l.interest_rate && (
+                                  <span className="text-xs text-neutral-400">{l.interest_rate}% APR</span>
+                                )}
+                              </div>
+                            ))}
                           </div>
-                          <div className="text-xs text-neutral-500 mt-0.5">
-                            {asset.currency}
-                            {asset.country ? ` · ${asset.country}` : ""}
-                            {asset.notes ? ` · ${asset.notes}` : ""}
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <span className="text-sm font-medium">
+                                {formatCurrency(asset.current_value, asset.currency)}
+                              </span>
+                              {(() => {
+                                const linked = liabilities?.filter((l) => l.linked_asset_id === asset.id) ?? [];
+                                const totalDebt = linked.reduce((sum, l) => sum + l.current_balance, 0);
+                                if (totalDebt > 0) {
+                                  const equity = asset.current_value - totalDebt;
+                                  return (
+                                    <div className="text-xs text-neutral-500">
+                                      Equity: {formatCurrency(equity, asset.currency)}
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
+                            </div>
+                            <Button
+                              variant="ghost" size="sm"
+                              title="Link a liability"
+                              onClick={() => {
+                                setLinkingAssetId(linkingAssetId === asset.id ? null : asset.id);
+                                setLiabilityForm({ name: `${asset.name} Mortgage`, liability_type: "mortgage", current_balance: "", interest_rate: "", monthly_payment: "", notes: "" });
+                              }}
+                            >
+                              <LinkIcon className="h-3.5 w-3.5 text-blue-500" />
+                            </Button>
+                            <Button
+                              variant="ghost" size="sm"
+                              onClick={() => {
+                                setEditingId(asset.id);
+                                setEditForm({
+                                  name: asset.name,
+                                  current_value: String(asset.current_value),
+                                  currency: asset.currency,
+                                  liquidity_category: asset.liquidity_category,
+                                  country: asset.country || "",
+                                  notes: asset.notes || "",
+                                  asset_class: asset.asset_class,
+                                });
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5 text-neutral-400" />
+                            </Button>
+                            <Button
+                              variant="ghost" size="sm"
+                              onClick={() => {
+                                if (confirm("Delete this asset?")) deleteAsset.mutate(asset.id);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium">
-                            {formatCurrency(asset.current_value, asset.currency)}
-                          </span>
-                          <Button
-                            variant="ghost" size="sm"
-                            onClick={() => {
-                              setEditingId(asset.id);
-                              setEditForm({
-                                name: asset.name,
-                                current_value: String(asset.current_value),
-                                currency: asset.currency,
-                                liquidity_category: asset.liquidity_category,
-                                country: asset.country || "",
-                                notes: asset.notes || "",
-                                asset_class: asset.asset_class,
-                              });
-                            }}
-                          >
-                            <Pencil className="h-3.5 w-3.5 text-neutral-400" />
-                          </Button>
-                          <Button
-                            variant="ghost" size="sm"
-                            onClick={() => {
-                              if (confirm("Delete this asset?")) deleteAsset.mutate(asset.id);
-                            }}
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                          </Button>
-                        </div>
+                        {/* Inline liability form */}
+                        {linkingAssetId === asset.id && (
+                          <div className="rounded-b-md border border-t-0 border-blue-200 bg-blue-50/30 px-4 py-3 space-y-3">
+                            <p className="text-xs font-medium text-blue-700">Link a liability to {asset.name}</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div>
+                                <Label className="text-xs">Name</Label>
+                                <Input value={liabilityForm.name} onChange={(e) => setLiabilityForm({ ...liabilityForm, name: e.target.value })} className="h-8 text-sm" />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Type</Label>
+                                <select className="w-full rounded-md border px-2 py-1.5 text-sm" value={liabilityForm.liability_type} onChange={(e) => setLiabilityForm({ ...liabilityForm, liability_type: e.target.value })}>
+                                  {LIABILITY_TYPES.map((t) => <option key={t} value={t}>{LIABILITY_LABELS[t] || t}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <Label className="text-xs">Balance Owed *</Label>
+                                <Input type="number" step="0.01" value={liabilityForm.current_balance} onChange={(e) => setLiabilityForm({ ...liabilityForm, current_balance: e.target.value })} className="h-8 text-sm" placeholder="e.g. 250000" />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Interest Rate %</Label>
+                                <Input type="number" step="0.01" value={liabilityForm.interest_rate} onChange={(e) => setLiabilityForm({ ...liabilityForm, interest_rate: e.target.value })} className="h-8 text-sm" placeholder="e.g. 4.5" />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Monthly Payment</Label>
+                                <Input type="number" step="0.01" value={liabilityForm.monthly_payment} onChange={(e) => setLiabilityForm({ ...liabilityForm, monthly_payment: e.target.value })} className="h-8 text-sm" />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Notes</Label>
+                                <Input value={liabilityForm.notes} onChange={(e) => setLiabilityForm({ ...liabilityForm, notes: e.target.value })} className="h-8 text-sm" />
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={async () => {
+                                await createLiability.mutateAsync({
+                                  name: liabilityForm.name,
+                                  liability_type: liabilityForm.liability_type,
+                                  current_balance: parseFloat(liabilityForm.current_balance) || 0,
+                                  currency: asset.currency,
+                                  interest_rate: liabilityForm.interest_rate ? parseFloat(liabilityForm.interest_rate) : undefined,
+                                  monthly_payment: liabilityForm.monthly_payment ? parseFloat(liabilityForm.monthly_payment) : undefined,
+                                  linked_asset_id: asset.id,
+                                  notes: liabilityForm.notes || undefined,
+                                } as any);
+                                setLinkingAssetId(null);
+                              }} disabled={createLiability.isPending || !liabilityForm.current_balance}>
+                                <Check className="h-3.5 w-3.5 mr-1" />
+                                {createLiability.isPending ? "Saving..." : "Link Liability"}
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => setLinkingAssetId(null)}>
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )
                   ))}
