@@ -1,0 +1,33 @@
+{
+  "appId": "com.tradeiq.wealthcopilot",
+  "appName": "Wealth Copilot",
+  "webDir": "out",
+  "server": {
+    "url": "https://wealthcopilot.vercel.app",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "preferredContentMode": "mobile",
+    "scheme": "Wealth Copilot"
+  },
+  "android": {
+    "backgroundColor": "#0f172a"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0f172a"
+    },
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "launchShowDuration": 1500,
+      "backgroundColor": "#0f172a",
+      "showSpinner": false
+    },
+    "Keyboard": {
+      "resize": "body",
+      "resizeOnFullScreen": true
+    }
+  }
+}

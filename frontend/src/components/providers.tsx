@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthContext, User, getStoredToken, setStoredToken, removeStoredToken } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { initNativePlugins } from "@/lib/capacitor";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,6 +19,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    initNativePlugins();
+  }, []);
 
   useEffect(() => {
     const stored = getStoredToken();
