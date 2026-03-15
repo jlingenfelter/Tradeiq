@@ -14,11 +14,13 @@ _csv_uploads: dict[str, dict] = {}
 
 KNOWN_COLUMN_ALIASES = {
     "symbol": ["symbol", "ticker", "stock", "sym"],
-    "quantity": ["quantity", "shares", "qty", "amount"],
-    "cost_basis_per_share": ["avg_cost", "cost_basis", "cost_per_share", "avg_price", "purchase_price"],
-    "cost_basis_total": ["total_cost", "cost_basis_total", "total_cost_basis"],
+    "quantity": ["quantity", "shares", "qty", "amount", "no. of shares"],
+    "cost_basis_per_share": ["avg_cost", "cost_basis", "cost_per_share", "avg_price", "purchase_price", "price / share"],
+    "cost_basis_total": ["total_cost", "cost_basis_total", "total_cost_basis", "total"],
     "asset_name": ["name", "company", "company_name", "asset_name", "description"],
-    "currency": ["currency", "ccy"],
+    "currency": ["currency", "ccy", "currency (price / share)"],
+    "action": ["action"],
+    "isin": ["isin"],
 }
 
 
@@ -31,6 +33,75 @@ def auto_map_columns(csv_columns: list[str]) -> dict[str, str]:
                 mapping[lower_cols[alias]] = field
                 break
     return mapping
+
+
+def _is_trading212_format(columns: list[str]) -> bool:
+    lower_cols = {c.lower().strip() for c in columns}
+    return "action" in lower_cols and "ticker" in lower_cols and "no. of shares" in lower_cols
+
+
+def _aggregate_trading212_rows(rows: list[dict], columns: list[str]) -> list[dict]:
+    """Aggregate Trading 212 transaction rows into net positions."""
+    col_map = {c.lower().strip(): c for c in columns}
+    action_col = col_map.get("action", "Action")
+    ticker_col = col_map.get("ticker", "Ticker")
+    name_col = col_map.get("name", "Name")
+    shares_col = col_map.get("no. of shares", "No. of shares")
+    price_col = col_map.get("price / share", "Price / share")
+    currency_col = col_map.get("currency (price / share)", "Currency (Price / share)")
+
+    positions: dict[str, dict] = {}
+    for row in rows:
+        action = row.get(action_col, "").strip()
+        if action not in ("Market buy", "Limit buy", "Market sell", "Limit sell",
+                          "Buy", "Sell", "Stop buy", "Stop sell"):
+            continue
+
+        ticker = row.get(ticker_col, "").strip()
+        if not ticker:
+            continue
+
+        try:
+            qty = float(row.get(shares_col, "0").strip().replace(",", ""))
+        except ValueError:
+            continue
+
+        price_str = row.get(price_col, "").strip().replace(",", "").replace("$", "").replace("£", "").replace("€", "")
+        try:
+            price = float(price_str) if price_str else 0
+        except ValueError:
+            price = 0
+
+        is_sell = "sell" in action.lower()
+
+        if ticker not in positions:
+            positions[ticker] = {
+                "symbol": ticker,
+                "name": row.get(name_col, ticker).strip(),
+                "quantity": 0,
+                "total_cost": 0,
+                "currency": row.get(currency_col, "USD").strip() if currency_col in row else "USD",
+            }
+
+        if is_sell:
+            positions[ticker]["quantity"] -= qty
+        else:
+            positions[ticker]["quantity"] += qty
+            positions[ticker]["total_cost"] += qty * price
+
+    # Convert to row format, filter out closed positions
+    result = []
+    for ticker, pos in positions.items():
+        if pos["quantity"] > 0.0001:
+            avg_price = pos["total_cost"] / pos["quantity"] if pos["quantity"] > 0 else 0
+            result.append({
+                "Ticker": pos["symbol"],
+                "Name": pos["name"],
+                "No. of shares": str(pos["quantity"]),
+                "Price / share": f"{avg_price:.4f}",
+                "Currency (Price / share)": pos["currency"],
+            })
+    return result
 
 
 def parse_csv_upload(file: BinaryIO, filename: str) -> dict:
@@ -52,19 +123,28 @@ def parse_csv_upload(file: BinaryIO, filename: str) -> dict:
     if not rows:
         raise BadRequestError("CSV file has no data rows")
 
+    columns = list(reader.fieldnames)
+    is_t212 = _is_trading212_format(columns)
+
+    if is_t212:
+        # Aggregate transactions into net positions
+        rows = _aggregate_trading212_rows(rows, columns)
+        columns = ["Ticker", "Name", "No. of shares", "Price / share", "Currency (Price / share)"]
+
     upload_id = str(uuid.uuid4())
     _csv_uploads[upload_id] = {
         "rows": rows,
-        "columns": list(reader.fieldnames),
+        "columns": columns,
         "filename": filename,
     }
 
     return {
         "preview": rows[:10],
-        "columns": list(reader.fieldnames),
+        "columns": columns,
         "row_count": len(rows),
         "upload_id": upload_id,
-        "suggested_mapping": auto_map_columns(list(reader.fieldnames)),
+        "suggested_mapping": auto_map_columns(columns),
+        "detected_format": "trading212" if is_t212 else "generic",
     }
 
 

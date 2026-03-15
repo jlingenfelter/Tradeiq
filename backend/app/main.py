@@ -21,6 +21,7 @@ from app.api.containers import router as containers_router
 from app.api.assets import router as assets_router
 from app.api.liabilities import router as liabilities_router
 from app.api.wealth_dashboard import router as wealth_dashboard_router
+from app.api.trading212 import router as trading212_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -62,6 +63,9 @@ app.include_router(dashboard_router)
 
 # AI & chat
 app.include_router(chat_router)
+
+# Broker integrations
+app.include_router(trading212_router)
 
 # Alerts
 app.include_router(alerts_router)
