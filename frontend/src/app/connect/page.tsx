@@ -13,7 +13,7 @@ import { useConnections } from "@/hooks/use-analytics";
 import { api } from "@/lib/api";
 import { ArrowLeft, Check, Loader2, RefreshCw, Trash2, Wifi } from "lucide-react";
 
-type Broker = "trading212" | "alpaca" | "ibkr" | "ig" | "tradier" | "crypto" | null;
+type Broker = "trading212" | "alpaca" | "ibkr" | "ig" | "tradier" | "crypto" | "moneybox" | "kraken" | null;
 
 interface SyncResult {
   imported: number;
@@ -34,7 +34,9 @@ const BROKERS = [
   { id: "ibkr" as Broker, name: "Interactive Brokers", desc: "Connect via IB Gateway", category: "broker" },
   { id: "ig" as Broker, name: "IG Group", desc: "Connect with API key and credentials", category: "broker" },
   { id: "tradier" as Broker, name: "Tradier", desc: "Connect with OAuth access token", category: "broker" },
+  { id: "moneybox" as Broker, name: "Moneybox", desc: "Connect ISAs, SIPPs and general accounts", category: "broker" },
   { id: "crypto" as Broker, name: "Crypto Wallet", desc: "Read ETH or BTC wallet balances", category: "crypto" },
+  { id: "kraken" as Broker, name: "Kraken", desc: "Import crypto spot balances via API", category: "crypto" },
 ];
 
 export default function ConnectPage() {
@@ -522,6 +524,68 @@ export default function ConnectPage() {
                 </Button>
                 <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700" onClick={() => handleSync("/tradier/sync", { access_token: apiKey, tradier_account_id: accountId, environment: env })} disabled={!apiKey || !accountId || loading}>
                   {loading ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Importing...</> : "Import Positions"}
+                </Button>
+              </div>
+              {renderSyncResult()}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Moneybox */}
+        {selectedBroker === "moneybox" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Connect Moneybox</CardTitle>
+              <CardDescription>Import your ISA, LISA, SIPP and general investment accounts</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {renderPortfolioSelector()}
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Your Moneybox email" />
+              </div>
+              <div className="space-y-2">
+                <Label>Password</Label>
+                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your Moneybox password" />
+              </div>
+              {renderStatus()}
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => handleTest("/moneybox/test", { email: username, password })} disabled={!username || !password || loading}>
+                  Test Connection
+                </Button>
+                <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700" onClick={() => handleSync("/moneybox/sync", { email: username, password })} disabled={!username || !password || loading}>
+                  {loading ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Importing...</> : "Import Holdings"}
+                </Button>
+              </div>
+              {renderSyncResult()}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Kraken */}
+        {selectedBroker === "kraken" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Connect Kraken</CardTitle>
+              <CardDescription>Enter your Kraken API key with &ldquo;Query Funds&rdquo; permission</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {renderPortfolioSelector()}
+              <div className="space-y-2">
+                <Label>API Key</Label>
+                <Input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Kraken API Key" />
+              </div>
+              <div className="space-y-2">
+                <Label>Private Key (Secret)</Label>
+                <Input type="password" value={apiSecret} onChange={(e) => setApiSecret(e.target.value)} placeholder="Kraken Private Key" />
+              </div>
+              {renderStatus()}
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => handleTest("/kraken/test", { api_key: apiKey, api_secret: apiSecret })} disabled={!apiKey || !apiSecret || loading}>
+                  Test Connection
+                </Button>
+                <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700" onClick={() => handleSync("/kraken/sync", { api_key: apiKey, api_secret: apiSecret })} disabled={!apiKey || !apiSecret || loading}>
+                  {loading ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Importing...</> : "Import Holdings"}
                 </Button>
               </div>
               {renderSyncResult()}

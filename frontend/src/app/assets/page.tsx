@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useAssets, useCreateAsset, useDeleteAsset } from "@/hooks/use-wealth";
+import { useAssets, useCreateAsset, useUpdateAsset, useDeleteAsset } from "@/hooks/use-wealth";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Check } from "lucide-react";
 import { ASSET_CLASSES, LIQUIDITY_CATEGORIES } from "@/types";
 import type { Asset } from "@/types";
 
@@ -28,8 +28,11 @@ const LIQUIDITY_LABELS: Record<string, string> = {
 export default function AssetsPage() {
   const { data: assets, isLoading } = useAssets();
   const createAsset = useCreateAsset();
+  const updateAsset = useUpdateAsset();
   const deleteAsset = useDeleteAsset();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", current_value: "", currency: "", liquidity_category: "", country: "", notes: "", asset_class: "" });
   const [filter, setFilter] = useState<string>("");
   const [form, setForm] = useState({
     name: "", asset_class: "cash", current_value: "",
@@ -209,37 +212,114 @@ export default function AssetsPage() {
               <CardContent>
                 <div className="space-y-2">
                   {items.map((asset) => (
-                    <div key={asset.id} className="flex items-center justify-between rounded-md border px-4 py-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{asset.name}</span>
-                          {asset.symbol && (
-                            <Badge variant="secondary" className="text-xs">{asset.symbol}</Badge>
-                          )}
-                          <Badge variant="secondary" className="text-xs">
-                            {LIQUIDITY_LABELS[asset.liquidity_category] || asset.liquidity_category}
-                          </Badge>
+                    editingId === asset.id ? (
+                      <div key={asset.id} className="rounded-md border border-indigo-200 bg-indigo-50/30 px-4 py-3 space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <Label className="text-xs">Name</Label>
+                            <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="h-8 text-sm" />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Value</Label>
+                            <Input type="number" step="0.01" value={editForm.current_value} onChange={(e) => setEditForm({ ...editForm, current_value: e.target.value })} className="h-8 text-sm" />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Currency</Label>
+                            <Input value={editForm.currency} onChange={(e) => setEditForm({ ...editForm, currency: e.target.value })} className="h-8 text-sm" />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Asset Class</Label>
+                            <select className="w-full rounded-md border px-2 py-1.5 text-sm" value={editForm.asset_class} onChange={(e) => setEditForm({ ...editForm, asset_class: e.target.value })}>
+                              {ASSET_CLASSES.map((cls) => <option key={cls} value={cls}>{CLASS_LABELS[cls]}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <Label className="text-xs">Liquidity</Label>
+                            <select className="w-full rounded-md border px-2 py-1.5 text-sm" value={editForm.liquidity_category} onChange={(e) => setEditForm({ ...editForm, liquidity_category: e.target.value })}>
+                              {LIQUIDITY_CATEGORIES.map((liq) => <option key={liq} value={liq}>{LIQUIDITY_LABELS[liq]}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <Label className="text-xs">Country</Label>
+                            <Input value={editForm.country} onChange={(e) => setEditForm({ ...editForm, country: e.target.value })} className="h-8 text-sm" />
+                          </div>
+                          <div className="md:col-span-2">
+                            <Label className="text-xs">Notes</Label>
+                            <Input value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} className="h-8 text-sm" />
+                          </div>
                         </div>
-                        <div className="text-xs text-neutral-500 mt-0.5">
-                          {asset.currency}
-                          {asset.country ? ` · ${asset.country}` : ""}
-                          {asset.notes ? ` · ${asset.notes}` : ""}
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={async () => {
+                            await updateAsset.mutateAsync({
+                              id: asset.id,
+                              name: editForm.name,
+                              current_value: parseFloat(editForm.current_value) || asset.current_value,
+                              currency: editForm.currency,
+                              asset_class: editForm.asset_class,
+                              liquidity_category: editForm.liquidity_category,
+                              country: editForm.country || undefined,
+                              notes: editForm.notes || undefined,
+                            } as any);
+                            setEditingId(null);
+                          }} disabled={updateAsset.isPending}>
+                            <Check className="h-3.5 w-3.5 mr-1" />
+                            {updateAsset.isPending ? "Saving..." : "Save"}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                            Cancel
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm font-medium">
-                          {formatCurrency(asset.current_value, asset.currency)}
-                        </span>
-                        <Button
-                          variant="ghost" size="sm"
-                          onClick={() => {
-                            if (confirm("Delete this asset?")) deleteAsset.mutate(asset.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
+                    ) : (
+                      <div key={asset.id} className="flex items-center justify-between rounded-md border px-4 py-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">{asset.name}</span>
+                            {asset.symbol && (
+                              <Badge variant="secondary" className="text-xs">{asset.symbol}</Badge>
+                            )}
+                            <Badge variant="secondary" className="text-xs">
+                              {LIQUIDITY_LABELS[asset.liquidity_category] || asset.liquidity_category}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-neutral-500 mt-0.5">
+                            {asset.currency}
+                            {asset.country ? ` · ${asset.country}` : ""}
+                            {asset.notes ? ` · ${asset.notes}` : ""}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium">
+                            {formatCurrency(asset.current_value, asset.currency)}
+                          </span>
+                          <Button
+                            variant="ghost" size="sm"
+                            onClick={() => {
+                              setEditingId(asset.id);
+                              setEditForm({
+                                name: asset.name,
+                                current_value: String(asset.current_value),
+                                currency: asset.currency,
+                                liquidity_category: asset.liquidity_category,
+                                country: asset.country || "",
+                                notes: asset.notes || "",
+                                asset_class: asset.asset_class,
+                              });
+                            }}
+                          >
+                            <Pencil className="h-3.5 w-3.5 text-neutral-400" />
+                          </Button>
+                          <Button
+                            variant="ghost" size="sm"
+                            onClick={() => {
+                              if (confirm("Delete this asset?")) deleteAsset.mutate(asset.id);
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    )
                   ))}
                 </div>
               </CardContent>
