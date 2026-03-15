@@ -43,8 +43,9 @@ def get_dashboard(
     if not snapshot or stale:
         try:
             compute_portfolio_analytics(db, str(portfolio.id))
-        except Exception:
-            pass
+        except Exception as e:
+            import traceback
+            print(f"[dashboard] Analytics compute failed: {e}\n{traceback.format_exc()}")
         snapshot = (
             db.query(AnalyticsSnapshot)
             .filter(AnalyticsSnapshot.portfolio_id == portfolio.id)

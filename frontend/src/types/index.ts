@@ -190,6 +190,19 @@ export interface WealthHealthBreakdown {
   public_market_risk: number;
 }
 
+export interface WealthHolding {
+  name: string;
+  symbol: string | null;
+  category: string;
+  asset_class: string;
+  value: number;
+  weight: number;
+  currency: string;
+  country: string | null;
+  sector: string | null;
+  source: string;
+}
+
 export interface WealthDashboardResponse {
   base_currency: string;
   total_assets: number;
@@ -213,6 +226,7 @@ export interface WealthDashboardResponse {
   health_score: number;
   health_score_breakdown: WealthHealthBreakdown;
   ai_summary: string | null;
+  holdings: WealthHolding[];
 }
 
 export interface NetWorthHistoryItem {

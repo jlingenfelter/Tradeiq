@@ -8,7 +8,7 @@ from app.models.portfolio import Portfolio, Account
 from app.models.position import Position
 from app.models.analytics import PortfolioSnapshot, AnalyticsSnapshot
 from app.services.wealth_service import compute_wealth_snapshot, get_net_worth_history
-from app.schemas.wealth import WealthDashboardResponse, AllocationItem, ConcentrationItem, WealthWarning, WealthHealthBreakdown
+from app.schemas.wealth import WealthDashboardResponse, AllocationItem, ConcentrationItem, WealthWarning, WealthHealthBreakdown, WealthHolding
 
 router = APIRouter(prefix="/dashboard", tags=["wealth-dashboard"])
 
@@ -61,6 +61,7 @@ def get_overview(
         health_score=data["health_score"],
         health_score_breakdown=WealthHealthBreakdown(**data["health_score_breakdown"]),
         ai_summary=data.get("ai_summary"),
+        holdings=[WealthHolding(**h) for h in data.get("holdings", [])],
     )
 
 

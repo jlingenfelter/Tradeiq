@@ -154,6 +154,65 @@ export default function OverviewPage() {
           </Card>
         )}
 
+        {/* Holdings Breakdown */}
+        {data.holdings && data.holdings.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">All Holdings</CardTitle>
+                <span className="text-xs text-neutral-500">{data.holdings.length} items</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-neutral-500">
+                      <th className="pb-2 font-medium">Name</th>
+                      <th className="pb-2 font-medium">Category</th>
+                      <th className="pb-2 font-medium text-right">Value</th>
+                      <th className="pb-2 font-medium text-right">Weight</th>
+                      <th className="pb-2 font-medium">Source</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.holdings.map((h, i) => (
+                      <tr key={i} className="border-b last:border-0">
+                        <td className="py-2.5">
+                          <div className="font-medium">{h.name}</div>
+                          {h.symbol && (
+                            <div className="text-xs text-neutral-400">{h.symbol}</div>
+                          )}
+                        </td>
+                        <td className="py-2.5">
+                          <Badge variant="secondary" className="text-xs font-normal">
+                            {h.category}
+                          </Badge>
+                        </td>
+                        <td className="py-2.5 text-right font-medium">
+                          {formatCurrency(h.value, data.base_currency)}
+                        </td>
+                        <td className="py-2.5 text-right text-neutral-500">
+                          {h.weight.toFixed(1)}%
+                        </td>
+                        <td className="py-2.5">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            h.source === "portfolio"
+                              ? "bg-indigo-50 text-indigo-700"
+                              : "bg-neutral-100 text-neutral-600"
+                          }`}>
+                            {h.source === "portfolio" ? "Broker" : "Manual"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* AI Summary */}
         <WealthAiSummary />
       </div>

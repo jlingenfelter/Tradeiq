@@ -29,7 +29,10 @@ def compute_portfolio_analytics(db: Session, portfolio_id: str) -> dict:
 
     # Get unique symbols and fetch quotes
     symbols = list(set(p.symbol for p in positions))
-    quotes = fetch_quotes(symbols)
+    try:
+        quotes = fetch_quotes(symbols)
+    except Exception:
+        quotes = {}
 
     # Get metadata for sectors/countries
     metadata_map: dict[str, AssetMetadata] = {}
@@ -47,9 +50,12 @@ def compute_portfolio_analytics(db: Session, portfolio_id: str) -> dict:
         quote = quotes.get(pos.symbol)
         price = quote.price if quote else 0.0
         prev_close = quote.previous_close if quote else None
+        # Fallback: use cost basis per share as price if no market quote
+        if price == 0 and pos.cost_basis_per_share:
+            price = pos.cost_basis_per_share
         market_value = pos.quantity * price
         cost_basis = pos.cost_basis_total or (pos.cost_basis_per_share or 0) * pos.quantity
-        unrealized_pnl = market_value - cost_basis if cost_basis else None
+        unrealized_pnl = market_value - cost_basis if cost_basis and market_value > 0 else None
         meta = metadata_map.get(pos.symbol)
 
         holdings.append({

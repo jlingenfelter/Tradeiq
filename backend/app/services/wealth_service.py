@@ -403,6 +403,22 @@ def compute_wealth_snapshot(db: Session, user_id: uuid.UUID) -> dict:
         "liquidity_allocations": liquidity_alloc,
         "geography_allocations": geo_alloc,
         "sector_allocations": sector_alloc,
+        "holdings": [
+            {
+                "name": ad["name"],
+                "symbol": ad.get("symbol"),
+                "category": ad["category"],
+                "asset_class": ad["asset_class"],
+                "value": ad["value"],
+                "weight": round((ad["value"] / total_assets * 100) if total_assets > 0 else 0, 2),
+                "currency": ad.get("currency", "USD"),
+                "country": ad.get("country"),
+                "sector": ad.get("sector"),
+                "source": ad.get("source", "manual"),
+            }
+            for ad in asset_details
+            if ad["value"] > 0
+        ],
     }
 
 

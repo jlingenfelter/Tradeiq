@@ -179,6 +179,19 @@ class WealthHealthBreakdown(BaseModel):
     public_market_risk: int
 
 
+class WealthHolding(BaseModel):
+    name: str
+    symbol: str | None = None
+    category: str
+    asset_class: str
+    value: float
+    weight: float
+    currency: str = "USD"
+    country: str | None = None
+    sector: str | None = None
+    source: str = "manual"
+
+
 class WealthDashboardResponse(BaseModel):
     base_currency: str
     total_assets: float
@@ -202,6 +215,7 @@ class WealthDashboardResponse(BaseModel):
     health_score: int
     health_score_breakdown: WealthHealthBreakdown
     ai_summary: str | None
+    holdings: list[WealthHolding] = []
 
 
 class NetWorthHistoryItem(BaseModel):
