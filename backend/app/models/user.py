@@ -26,3 +26,4 @@ class User(Base):
     assets = relationship("Asset", back_populates="user", cascade="all, delete-orphan")
     liabilities = relationship("Liability", back_populates="user", cascade="all, delete-orphan")
     wealth_snapshots = relationship("WealthSnapshot", back_populates="user", cascade="all, delete-orphan")
+    goals = relationship("WealthGoal", back_populates="user", cascade="all, delete-orphan")

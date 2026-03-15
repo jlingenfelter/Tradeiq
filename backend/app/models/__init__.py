@@ -11,6 +11,7 @@ from app.models.wealth import (
     WealthContainer, Asset, Liability, WealthSnapshot,
     AllocationSnapshot, ImportJob, AISummary,
 )
+from app.models.goal import WealthGoal
 
 __all__ = [
     "User",
@@ -33,4 +34,5 @@ __all__ = [
     "AllocationSnapshot",
     "ImportJob",
     "AISummary",
+    "WealthGoal",
 ]

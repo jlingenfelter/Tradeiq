@@ -10,6 +10,8 @@ import { WealthAllocationChart } from "@/components/wealth/WealthAllocationChart
 import { WealthHealthCard } from "@/components/wealth/WealthHealthCard";
 import { WealthSummaryCards } from "@/components/wealth/WealthSummaryCards";
 import { WealthAiSummary } from "@/components/wealth/WealthAiSummary";
+import { WeeklyRecapCard } from "@/components/wealth/WeeklyRecapCard";
+import { GoalProgressCard } from "@/components/wealth/GoalProgressCard";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
@@ -87,6 +89,12 @@ export default function OverviewPage() {
 
         {/* Summary cards */}
         <WealthSummaryCards data={data} />
+
+        {/* Goals + Weekly Recap */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <GoalProgressCard />
+          <WeeklyRecapCard />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Allocation chart */}

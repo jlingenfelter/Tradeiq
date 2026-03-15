@@ -261,6 +261,52 @@ export interface AlertSubscription {
   enabled: boolean;
 }
 
+// Goals
+export interface WealthGoal {
+  id: string;
+  name: string;
+  emoji: string;
+  goal_type: string;
+  target_amount: number;
+  target_date: string | null;
+  currency: string;
+  notes: string | null;
+  progress_pct: number;
+  current_value: number;
+  remaining: number;
+  amount_label: string;
+  monthly_growth: number;
+  projected_date: string | null;
+  on_track: boolean | null;
+  days_remaining: number | null;
+  milestones: { pct: number; reached: boolean }[];
+}
+
+// Weekly Recap
+export interface WeeklyRecap {
+  currency: string;
+  net_worth: number;
+  weekly_change: number;
+  weekly_change_pct: number;
+  monthly_change: number;
+  monthly_change_pct: number;
+  per_hour: number;
+  per_day: number;
+  growth_streak: number;
+  headline: string;
+  top_movers: {
+    category: string;
+    current: number;
+    previous: number;
+    change: number;
+    change_pct: number;
+  }[];
+  debt_change: number;
+  total_assets: number;
+  total_liabilities: number;
+  snapshot_count: number;
+}
+
 // Asset class constants
 export const ASSET_CLASSES = [
   "cash",
