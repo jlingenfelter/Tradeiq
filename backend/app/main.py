@@ -32,6 +32,8 @@ from app.api.moneybox import router as moneybox_router
 from app.api.kraken import router as kraken_router
 from app.api.goals import router as goals_router
 from app.api.recap import router as recap_router
+from app.api.insights import router as insights_router
+from app.api.smart_alerts import router as smart_alerts_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -107,6 +109,8 @@ app.include_router(kraken_router)
 # Goals & gamification
 app.include_router(goals_router)
 app.include_router(recap_router)
+app.include_router(insights_router)
+app.include_router(smart_alerts_router)
 
 # Alerts
 app.include_router(alerts_router)

@@ -12,6 +12,9 @@ import { WealthSummaryCards } from "@/components/wealth/WealthSummaryCards";
 import { WealthAiSummary } from "@/components/wealth/WealthAiSummary";
 import { WeeklyRecapCard } from "@/components/wealth/WeeklyRecapCard";
 import { GoalProgressCard } from "@/components/wealth/GoalProgressCard";
+import { NetWorthChart } from "@/components/wealth/NetWorthChart";
+import { InsightsCard } from "@/components/wealth/InsightsCard";
+import { SmartAlertsCard } from "@/components/wealth/SmartAlertsCard";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
@@ -87,6 +90,9 @@ export default function OverviewPage() {
           </CardContent>
         </Card>
 
+        {/* Smart Alerts */}
+        <SmartAlertsCard />
+
         {/* Summary cards */}
         <WealthSummaryCards data={data} />
 
@@ -95,6 +101,9 @@ export default function OverviewPage() {
           <GoalProgressCard />
           <WeeklyRecapCard />
         </div>
+
+        {/* Net Worth History Chart */}
+        <NetWorthChart />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Allocation chart */}
@@ -106,6 +115,9 @@ export default function OverviewPage() {
             breakdown={data.health_score_breakdown}
           />
         </div>
+
+        {/* AI Insights */}
+        <InsightsCard />
 
         {/* Top Warnings */}
         {data.top_warnings.length > 0 && (
