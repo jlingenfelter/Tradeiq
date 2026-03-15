@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.core.dependencies import get_current_user
+from app.core.tier_gate import require_pro
 from app.models.user import User
-from app.services.goal_service import get_goals, create_goal, update_goal, delete_goal
+from app.services.goal_service import get_goals, create_goal, update_goal, delete_goal, get_goal_projection
 
 router = APIRouter(prefix="/goals", tags=["goals"])
 
@@ -73,3 +74,13 @@ def delete_existing_goal(
 ):
     """Delete a goal."""
     return delete_goal(db, current_user.id, goal_id)
+
+
+@router.get("/{goal_id}/projection")
+def get_goal_projection_endpoint(
+    goal_id: uuid.UUID,
+    current_user: User = Depends(require_pro),
+    db: Session = Depends(get_db),
+):
+    """Get monthly projections for a goal with optimistic/pessimistic bands."""
+    return get_goal_projection(db, current_user.id, goal_id)

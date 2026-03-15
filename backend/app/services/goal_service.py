@@ -212,3 +212,122 @@ def delete_goal(db: Session, user_id: uuid.UUID, goal_id: uuid.UUID) -> dict:
     db.delete(goal)
     db.commit()
     return {"deleted": True}
+
+
+def get_goal_projection(db: Session, user_id: uuid.UUID, goal_id: uuid.UUID) -> dict:
+    """Generate monthly projections for a goal with optimistic/pessimistic bands.
+
+    Returns 24 months of forward projections using historical growth rate,
+    plus optimistic (+50%) and pessimistic (-50%) scenarios.
+    """
+    from app.core.exceptions import NotFoundError
+
+    goal = db.query(WealthGoal).filter(
+        WealthGoal.id == goal_id,
+        WealthGoal.user_id == user_id,
+    ).first()
+    if not goal:
+        raise NotFoundError("Goal not found")
+
+    # Get snapshot history for pace calculation
+    history = (
+        db.query(WealthSnapshot)
+        .filter(WealthSnapshot.user_id == user_id)
+        .order_by(WealthSnapshot.snapshot_time.asc())
+        .all()
+    )
+
+    latest = history[-1] if history else None
+    current_value = _get_current_value(goal, latest)
+
+    # Calculate monthly growth rate from history
+    monthly_growth = 0.0
+    if len(history) >= 2:
+        oldest = history[0]
+        newest = history[-1]
+        oldest_time = oldest.snapshot_time.replace(tzinfo=timezone.utc) if oldest.snapshot_time.tzinfo is None else oldest.snapshot_time
+        newest_time = newest.snapshot_time.replace(tzinfo=timezone.utc) if newest.snapshot_time.tzinfo is None else newest.snapshot_time
+        days_span = (newest_time - oldest_time).days
+        if days_span > 0:
+            if goal.goal_type == "debt_payoff":
+                total_change = oldest.total_liabilities - newest.total_liabilities
+            else:
+                old_val = getattr(oldest, GOAL_TYPE_VALUE_MAP.get(goal.goal_type, "net_worth"), 0)
+                new_val = getattr(newest, GOAL_TYPE_VALUE_MAP.get(goal.goal_type, "net_worth"), 0)
+                total_change = new_val - old_val
+            monthly_growth = total_change / days_span * 30.44
+
+    # Calculate savings rate (monthly growth as % of current value)
+    savings_rate = (monthly_growth / current_value * 100) if current_value > 0 else 0.0
+
+    # Project 24 months forward
+    now = datetime.now(timezone.utc)
+    projection_months = 24
+    monthly_projections = []
+
+    for m in range(1, projection_months + 1):
+        month_date = now + timedelta(days=m * 30.44)
+        base_value = current_value + (monthly_growth * m)
+        optimistic_value = current_value + (monthly_growth * 1.5 * m)
+        pessimistic_value = current_value + (monthly_growth * 0.5 * m)
+
+        # For debt payoff, values decrease (ensure floor at 0)
+        if goal.goal_type == "debt_payoff":
+            base_value = max(0, current_value - (monthly_growth * m))
+            optimistic_value = max(0, current_value - (monthly_growth * 1.5 * m))
+            pessimistic_value = max(0, current_value - (monthly_growth * 0.5 * m))
+
+        monthly_projections.append({
+            "month": month_date.strftime("%Y-%m"),
+            "value": round(base_value, 2),
+            "optimistic": round(optimistic_value, 2),
+            "pessimistic": round(pessimistic_value, 2),
+        })
+
+    # Confidence score: higher if more history data points and consistent growth
+    data_points = len(history)
+    if data_points >= 12:
+        confidence = 0.85
+    elif data_points >= 6:
+        confidence = 0.65
+    elif data_points >= 2:
+        confidence = 0.40
+    else:
+        confidence = 0.15
+
+    # Adjust confidence based on growth consistency
+    if len(history) >= 4:
+        # Check variance in monthly changes
+        changes = []
+        for i in range(1, len(history)):
+            prev_time = history[i - 1].snapshot_time
+            curr_time = history[i].snapshot_time
+            if prev_time.tzinfo is None:
+                prev_time = prev_time.replace(tzinfo=timezone.utc)
+            if curr_time.tzinfo is None:
+                curr_time = curr_time.replace(tzinfo=timezone.utc)
+            days = (curr_time - prev_time).days
+            if days > 0:
+                field = GOAL_TYPE_VALUE_MAP.get(goal.goal_type, "net_worth")
+                prev_val = getattr(history[i - 1], field, 0)
+                curr_val = getattr(history[i], field, 0)
+                daily_change = (curr_val - prev_val) / days
+                changes.append(daily_change)
+
+        if changes:
+            avg = sum(changes) / len(changes)
+            variance = sum((c - avg) ** 2 for c in changes) / len(changes)
+            std_dev = variance ** 0.5
+            # Lower std_dev relative to avg = more consistent = higher confidence
+            if avg != 0:
+                cv = abs(std_dev / avg)
+                if cv < 0.5:
+                    confidence = min(0.95, confidence + 0.10)
+                elif cv > 2.0:
+                    confidence = max(0.10, confidence - 0.15)
+
+    return {
+        "monthly_projections": monthly_projections,
+        "savings_rate": round(savings_rate, 2),
+        "confidence": round(confidence, 2),
+    }

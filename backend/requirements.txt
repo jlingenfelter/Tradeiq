@@ -16,3 +16,8 @@ redis==5.2.1
 celery[redis]==5.4.0
 yfinance==0.2.51
 pandas==2.2.3
+stripe>=8.0.0
+plaid-python>=29.0.0
+boto3>=1.34.0
+reportlab>=4.0.0
+klaviyo-api>=9.0.0

@@ -15,6 +15,7 @@ from app.services.portfolio_service import (
     update_portfolio, delete_portfolio, create_account,
 )
 from app.services.audit_service import log_event
+from app.core.tier_gate import get_user_tier
 
 router = APIRouter(prefix="/portfolios", tags=["portfolios"])
 
@@ -35,6 +36,13 @@ def create_new_portfolio(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # Free tier: max 1 portfolio
+    tier = get_user_tier(db, current_user.id)
+    if tier == "free":
+        existing = list_portfolios(db, current_user)
+        if len(existing) >= 1:
+            from app.core.exceptions import ForbiddenError
+            raise ForbiddenError("Free plan is limited to 1 portfolio. Upgrade to Pro for unlimited.")
     portfolio = create_portfolio(db, current_user, body.name, body.base_currency)
     log_event(db, current_user.id, "portfolio_created", {"portfolio_id": str(portfolio.id)})
     return PortfolioResponse(id=str(portfolio.id), name=portfolio.name, base_currency=portfolio.base_currency,

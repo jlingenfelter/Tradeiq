@@ -34,6 +34,16 @@ from app.api.goals import router as goals_router
 from app.api.recap import router as recap_router
 from app.api.insights import router as insights_router
 from app.api.smart_alerts import router as smart_alerts_router
+from app.api.billing import router as billing_router
+from app.api.household import router as household_router
+from app.api.documents import router as documents_router
+from app.api.api_keys import router as api_keys_router
+from app.api.plaid import router as plaid_router
+from app.api.truelayer import router as truelayer_router
+from app.api.annotations import router as annotations_router
+from app.api.reports import router as reports_router
+from app.api.scenarios import router as scenarios_router
+from app.api.notifications import router as notifications_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -114,6 +124,30 @@ app.include_router(smart_alerts_router)
 
 # Alerts
 app.include_router(alerts_router)
+
+# Billing & subscriptions
+app.include_router(billing_router)
+
+# Household / Family sharing
+app.include_router(household_router)
+
+# Document vault
+app.include_router(documents_router)
+
+# API keys
+app.include_router(api_keys_router)
+
+# Plaid & TrueLayer (open banking)
+app.include_router(plaid_router)
+app.include_router(truelayer_router)
+
+# Annotations, reports, scenarios
+app.include_router(annotations_router)
+app.include_router(reports_router)
+app.include_router(scenarios_router)
+
+# Notifications
+app.include_router(notifications_router)
 
 
 @app.exception_handler(Exception)

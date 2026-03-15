@@ -27,3 +27,7 @@ class User(Base):
     liabilities = relationship("Liability", back_populates="user", cascade="all, delete-orphan")
     wealth_snapshots = relationship("WealthSnapshot", back_populates="user", cascade="all, delete-orphan")
     goals = relationship("WealthGoal", back_populates="user", cascade="all, delete-orphan")
+    subscription = relationship("Subscription", back_populates="user", uselist=False)
+    plaid_items = relationship("PlaidItem", back_populates="user", cascade="all, delete-orphan")
+    annotations = relationship("NetWorthAnnotation", back_populates="user", cascade="all, delete-orphan")
+    notification_preferences = relationship("NotificationPreference", back_populates="user", cascade="all, delete-orphan")

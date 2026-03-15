@@ -12,6 +12,13 @@ from app.models.wealth import (
     AllocationSnapshot, ImportJob, AISummary,
 )
 from app.models.goal import WealthGoal
+from app.models.subscription import Subscription
+from app.models.household import Household, HouseholdMember, HouseholdGoal
+from app.models.document import Document
+from app.models.api_key import APIKey
+from app.models.plaid import PlaidItem, PlaidAccount
+from app.models.annotation import NetWorthAnnotation
+from app.models.notification import NotificationPreference
 
 __all__ = [
     "User",
@@ -35,4 +42,14 @@ __all__ = [
     "ImportJob",
     "AISummary",
     "WealthGoal",
+    "Subscription",
+    "Household",
+    "HouseholdMember",
+    "HouseholdGoal",
+    "Document",
+    "APIKey",
+    "PlaidItem",
+    "PlaidAccount",
+    "NetWorthAnnotation",
+    "NotificationPreference",
 ]
