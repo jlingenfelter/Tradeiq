@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://tradeiq-production-84c6.up.railway.app";
 
 class ApiError extends Error {
   constructor(
