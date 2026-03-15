@@ -68,39 +68,63 @@ def fetch_eth_balances(address: str) -> list[dict]:
     else:
         errors_log.append("Could not fetch ETH balance from any RPC endpoint")
 
-    # 2. Try Ankr multichain API for ERC-20 tokens
+    # 2. Fetch ERC-20 tokens via Blockscout API (free, no key needed)
+    blockscout_ok = False
     try:
-        resp = httpx.post(
-            "https://rpc.ankr.com/multichain/?ankr_getAccountBalance",
-            json={
-                "jsonrpc": "2.0",
-                "method": "ankr_getAccountBalance",
-                "params": {"walletAddress": address, "blockchain": ["eth"]},
-                "id": 1,
-            },
+        resp = httpx.get(
+            f"https://eth.blockscout.com/api/v2/addresses/{address}/token-balances",
             timeout=20,
         )
         if resp.status_code == 200:
-            data = resp.json()
-            assets = data.get("result", {}).get("assets", [])
-            for asset in assets:
-                symbol = asset.get("tokenSymbol", "")
-                qty = float(asset.get("balance", 0))
-                if qty > 0 and symbol:
-                    # Skip if we already have ETH from the RPC call
-                    if symbol.upper() == "ETH" and any(h["symbol"] == "ETH" for h in holdings):
-                        continue
-                    holdings.append({
-                        "symbol": symbol.upper(),
-                        "name": asset.get("tokenName", symbol),
-                        "quantity": qty,
-                        "asset_type": "crypto",
-                    })
-    except (httpx.RequestError, httpx.TimeoutException):
-        errors_log.append("Ankr API unavailable for token balances")
+            tokens = resp.json()
+            # Known legitimate tokens — filter out spam
+            known_symbols = {
+                "USDT", "USDC", "DAI", "WBTC", "WETH", "LINK", "UNI", "AAVE",
+                "MATIC", "SHIB", "ARB", "OP", "LDO", "MKR", "SNX", "COMP",
+                "CRV", "BAL", "SUSHI", "YFI", "1INCH", "ENS", "RPL", "GRT",
+                "FET", "RNDR", "IMX", "PEPE", "APE", "DYDX", "BLUR", "PENDLE",
+                "EIGEN", "ENA", "ETHFI", "SAFE", "MORPHO", "SKY",
+                "stETH", "rETH", "cbETH", "wstETH", "LUSD", "FRAX", "USDD",
+                "GHO", "crvUSD", "PYUSD", "TUSD", "BUSD", "GUSD", "RAI",
+            }
+            for t in tokens:
+                token_info = t.get("token", {})
+                symbol = token_info.get("symbol", "")
+                name = token_info.get("name", symbol)
+                decimals = int(token_info.get("decimals") or 18)
+                raw_value = t.get("value", "0")
 
-    # 3. Fallback: check common ERC-20 tokens via balanceOf calls
-    if len(holdings) <= 1:  # Only ETH or nothing
+                if not symbol or not raw_value:
+                    continue
+
+                # Only include known tokens to filter out airdrop spam
+                if symbol not in known_symbols:
+                    continue
+
+                try:
+                    qty = int(raw_value) / (10 ** decimals)
+                except (ValueError, OverflowError):
+                    continue
+
+                if qty <= 0.001:
+                    continue
+
+                # Skip if we already have ETH
+                if symbol.upper() in ("ETH", "WETH") and any(h["symbol"] == "ETH" for h in holdings):
+                    continue
+
+                holdings.append({
+                    "symbol": symbol.upper(),
+                    "name": name,
+                    "quantity": round(qty, 8),
+                    "asset_type": "crypto",
+                })
+            blockscout_ok = True
+    except (httpx.RequestError, httpx.TimeoutException):
+        errors_log.append("Blockscout API unavailable for token balances")
+
+    # 3. Fallback: check common ERC-20 tokens via direct RPC balanceOf calls
+    if not blockscout_ok and len(holdings) <= 1:
         common_tokens = {
             "0xdAC17F958D2ee523a2206206994597C13D831ec7": ("USDT", "Tether USD", 6),
             "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": ("USDC", "USD Coin", 6),
@@ -109,8 +133,9 @@ def fetch_eth_balances(address: str) -> list[dict]:
             "0x514910771AF9Ca656af840dff83E8264EcF986CA": ("LINK", "Chainlink", 18),
             "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984": ("UNI", "Uniswap", 18),
             "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9": ("AAVE", "Aave", 18),
+            "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84": ("stETH", "Lido Staked Ether", 18),
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": ("WETH", "Wrapped Ether", 18),
         }
-        # ERC-20 balanceOf(address) function signature
         balanceof_sig = "0x70a08231" + address[2:].lower().zfill(64)
 
         for contract, (symbol, name, decimals) in common_tokens.items():

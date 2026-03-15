@@ -214,7 +214,11 @@ export default function AssetsPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">{category}</CardTitle>
                   <span className="text-sm text-neutral-500">
-                    {formatCurrency(items.reduce((sum, a) => sum + a.current_value, 0))}
+                    {(() => {
+                      const byCurrency: Record<string, number> = {};
+                      items.forEach((a) => { byCurrency[a.currency] = (byCurrency[a.currency] || 0) + a.current_value; });
+                      return Object.entries(byCurrency).map(([cur, val]) => formatCurrency(val, cur)).join(" + ");
+                    })()}
                   </span>
                 </div>
               </CardHeader>
