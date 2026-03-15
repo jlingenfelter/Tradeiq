@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ const BROKERS = [
 
 export default function ConnectPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: portfolios } = usePortfolios();
   const [selectedBroker, setSelectedBroker] = useState<Broker>(null);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState("");
@@ -122,6 +124,10 @@ export default function ConnectPage() {
         setStatus(`Error: ${errMsg}`);
       } else {
         setStatus(`Imported ${result.imported} positions${extra}`);
+        // Invalidate dashboard/analytics cache so fresh data loads
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+        queryClient.invalidateQueries({ queryKey: ["analytics"] });
+        queryClient.invalidateQueries({ queryKey: ["positions"] });
       }
     } catch (err: unknown) {
       setStatus(err instanceof Error ? err.message : "Sync failed");

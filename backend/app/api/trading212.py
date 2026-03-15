@@ -12,6 +12,7 @@ from app.services.trading212_service import (
     fetch_t212_account_info,
     import_t212_positions,
 )
+from app.services.analytics_service import compute_portfolio_analytics
 
 router = APIRouter(prefix="/trading212", tags=["trading212"])
 
@@ -72,4 +73,9 @@ def sync_positions(
     """Sync positions from Trading 212 into a portfolio."""
     portfolio = get_portfolio(db, uuid.UUID(body.portfolio_id), current_user)
     result = import_t212_positions(db, portfolio, body.api_key, body.api_secret, body.environment)
+    if result["imported"] > 0:
+        try:
+            compute_portfolio_analytics(db, body.portfolio_id)
+        except Exception:
+            pass  # Don't fail the import if analytics fail
     return T212SyncResponse(**result)

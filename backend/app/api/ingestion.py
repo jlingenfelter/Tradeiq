@@ -10,6 +10,7 @@ from app.schemas.position import CsvUploadResponse, CsvConfirmRequest, CsvImport
 from app.services.portfolio_service import get_portfolio, create_account
 from app.services.ingestion_service import parse_csv_upload, confirm_csv_import
 from app.services.audit_service import log_event
+from app.services.analytics_service import compute_portfolio_analytics
 
 router = APIRouter(tags=["ingestion"])
 
@@ -52,4 +53,9 @@ def confirm_csv(
         "imported": result["imported"],
         "skipped": result["skipped"],
     }, portfolio_id=portfolio_id)
+    if result["imported"] > 0:
+        try:
+            compute_portfolio_analytics(db, str(portfolio_id))
+        except Exception:
+            pass
     return CsvImportResult(**result)

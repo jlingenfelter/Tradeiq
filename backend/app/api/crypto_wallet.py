@@ -13,6 +13,7 @@ from app.services.crypto_wallet_service import (
     fetch_wallet_holdings,
     import_wallet_positions,
 )
+from app.services.analytics_service import compute_portfolio_analytics
 
 router = APIRouter(prefix="/crypto-wallet", tags=["crypto-wallet"])
 
@@ -68,4 +69,9 @@ def sync_wallet(
     """Import crypto holdings from a wallet into a portfolio."""
     portfolio = get_portfolio(db, uuid.UUID(body.portfolio_id), current_user)
     result = import_wallet_positions(db, portfolio, body.address)
+    if result["imported"] > 0:
+        try:
+            compute_portfolio_analytics(db, body.portfolio_id)
+        except Exception:
+            pass
     return SyncResponse(**result)

@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -33,8 +34,17 @@ def get_dashboard(
         .first()
     )
 
-    if not snapshot:
-        analytics = compute_portfolio_analytics(db, str(portfolio.id))
+    # Recompute if no snapshot or if snapshot is stale (older than 5 minutes)
+    stale = False
+    if snapshot and snapshot.created_at:
+        age = datetime.now(timezone.utc) - snapshot.created_at.replace(tzinfo=timezone.utc)
+        stale = age > timedelta(minutes=5)
+
+    if not snapshot or stale:
+        try:
+            compute_portfolio_analytics(db, str(portfolio.id))
+        except Exception:
+            pass
         snapshot = (
             db.query(AnalyticsSnapshot)
             .filter(AnalyticsSnapshot.portfolio_id == portfolio.id)

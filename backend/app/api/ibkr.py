@@ -12,6 +12,7 @@ from app.services.ibkr_service import (
     fetch_ibkr_accounts,
     import_ibkr_positions,
 )
+from app.services.analytics_service import compute_portfolio_analytics
 
 router = APIRouter(prefix="/ibkr", tags=["ibkr"])
 
@@ -64,4 +65,9 @@ def sync_positions(
     """Sync positions from IBKR into a portfolio."""
     portfolio = get_portfolio(db, uuid.UUID(body.portfolio_id), current_user)
     result = import_ibkr_positions(db, portfolio, body.ibkr_account_id, body.gateway_url)
+    if result["imported"] > 0:
+        try:
+            compute_portfolio_analytics(db, body.portfolio_id)
+        except Exception:
+            pass
     return SyncResponse(**result)

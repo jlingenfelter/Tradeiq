@@ -12,6 +12,7 @@ from app.services.ig_service import (
     ig_authenticate,
     import_ig_positions,
 )
+from app.services.analytics_service import compute_portfolio_analytics
 
 router = APIRouter(prefix="/ig", tags=["ig"])
 
@@ -75,4 +76,9 @@ def sync_positions(
     result = import_ig_positions(
         db, portfolio, body.api_key, body.access_token, body.cst, body.environment
     )
+    if result["imported"] > 0:
+        try:
+            compute_portfolio_analytics(db, body.portfolio_id)
+        except Exception:
+            pass
     return SyncResponse(**result)

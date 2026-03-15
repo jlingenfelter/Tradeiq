@@ -12,6 +12,7 @@ from app.services.alpaca_service import (
     fetch_alpaca_account,
     import_alpaca_positions,
 )
+from app.services.analytics_service import compute_portfolio_analytics
 
 router = APIRouter(prefix="/alpaca", tags=["alpaca"])
 
@@ -71,4 +72,9 @@ def sync_positions(
     """Sync positions from Alpaca into a portfolio."""
     portfolio = get_portfolio(db, uuid.UUID(body.portfolio_id), current_user)
     result = import_alpaca_positions(db, portfolio, body.api_key, body.api_secret, body.environment)
+    if result["imported"] > 0:
+        try:
+            compute_portfolio_analytics(db, body.portfolio_id)
+        except Exception:
+            pass
     return SyncResponse(**result)
