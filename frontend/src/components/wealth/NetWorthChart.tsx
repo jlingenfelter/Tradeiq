@@ -88,7 +88,7 @@ export function NetWorthChart() {
                 width={55}
               />
               <Tooltip
-                formatter={(value: number) => formatCurrency(value)}
+                formatter={(value) => formatCurrency(Number(value))}
                 labelStyle={{ fontWeight: 600, marginBottom: 4 }}
                 contentStyle={{
                   borderRadius: 8, border: "1px solid #e5e7eb",
