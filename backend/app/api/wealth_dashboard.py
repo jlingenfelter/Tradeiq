@@ -4,6 +4,9 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
+from app.models.portfolio import Portfolio, Account
+from app.models.position import Position
+from app.models.analytics import PortfolioSnapshot, AnalyticsSnapshot
 from app.services.wealth_service import compute_wealth_snapshot, get_net_worth_history
 from app.schemas.wealth import WealthDashboardResponse, AllocationItem, ConcentrationItem, WealthWarning, WealthHealthBreakdown
 
@@ -85,3 +88,62 @@ def get_history(
 ):
     history = get_net_worth_history(db, current_user.id)
     return {"history": history}
+
+
+@router.get("/debug-portfolio-bridge")
+def debug_portfolio_bridge(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Debug endpoint to check what portfolio data flows into wealth."""
+    portfolios = db.query(Portfolio).filter(Portfolio.user_id == current_user.id).all()
+    result = {"portfolios": [], "total_positions": 0, "total_market_value": 0}
+
+    for p in portfolios:
+        positions = (
+            db.query(Position).join(Account)
+            .filter(Account.portfolio_id == p.id).all()
+        )
+        latest_snap = (
+            db.query(PortfolioSnapshot)
+            .filter(PortfolioSnapshot.portfolio_id == p.id)
+            .order_by(PortfolioSnapshot.snapshot_time.desc())
+            .first()
+        )
+        latest_analytics = (
+            db.query(AnalyticsSnapshot)
+            .filter(AnalyticsSnapshot.portfolio_id == p.id)
+            .order_by(AnalyticsSnapshot.created_at.desc())
+            .first()
+        )
+
+        holdings_detail = []
+        if latest_analytics and latest_analytics.holdings_detail:
+            holdings_detail = latest_analytics.holdings_detail
+
+        pos_info = []
+        for pos in positions:
+            h = next((hd for hd in holdings_detail if hd.get("symbol") == pos.symbol), {})
+            mv = h.get("market_value", 0)
+            pos_info.append({
+                "symbol": pos.symbol,
+                "name": pos.asset_name,
+                "quantity": pos.quantity,
+                "cost_basis": pos.cost_basis_total,
+                "analytics_market_value": mv,
+                "asset_type": pos.asset_type,
+            })
+            result["total_market_value"] += mv or 0
+
+        result["portfolios"].append({
+            "id": str(p.id),
+            "name": p.name,
+            "position_count": len(positions),
+            "snapshot_total_value": latest_snap.total_value if latest_snap else None,
+            "has_analytics": latest_analytics is not None,
+            "holdings_detail_count": len(holdings_detail),
+            "positions": pos_info,
+        })
+        result["total_positions"] += len(positions)
+
+    return result

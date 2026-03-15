@@ -203,36 +203,40 @@ def compute_wealth_snapshot(db: Session, user_id: uuid.UUID) -> dict:
         })
 
     # ── Include portfolio positions (broker/CSV imports) ──
-    portfolio_details = _get_portfolio_asset_details(db, user_id)
-    for pd in portfolio_details:
-        val = pd["value"]
-        if val <= 0:
-            continue
-        total_assets += val
+    try:
+        portfolio_details = _get_portfolio_asset_details(db, user_id)
+        for pd in portfolio_details:
+            val = pd["value"]
+            if val <= 0:
+                continue
+            total_assets += val
 
-        liq = pd["liquidity"]
-        if liq in LIQUID_CATEGORIES:
-            liquid_assets += val
-        else:
-            illiquid_assets += val
+            liq = pd["liquidity"]
+            if liq in LIQUID_CATEGORIES:
+                liquid_assets += val
+            else:
+                illiquid_assets += val
 
-        category = pd["category"]
-        if category == "Cash":
-            cash_value += val
-        elif category == "Public Investments":
-            investment_value += val
-        elif category == "Property":
-            property_value += val
-        elif category == "Crypto":
-            crypto_value += val
-        elif category == "Business Equity":
-            business_value += val
-        elif category == "Pensions":
-            pension_value += val
-        else:
-            other_asset_value += val
+            category = pd["category"]
+            if category == "Cash":
+                cash_value += val
+            elif category == "Public Investments":
+                investment_value += val
+            elif category == "Property":
+                property_value += val
+            elif category == "Crypto":
+                crypto_value += val
+            elif category == "Business Equity":
+                business_value += val
+            elif category == "Pensions":
+                pension_value += val
+            else:
+                other_asset_value += val
 
-        asset_details.append(pd)
+            asset_details.append(pd)
+    except Exception as e:
+        import traceback
+        print(f"[wealth_service] Error bridging portfolio positions: {e}\n{traceback.format_exc()}")
 
     total_liabilities = sum(l.current_balance for l in liabilities_list)
     net_worth = total_assets - total_liabilities
