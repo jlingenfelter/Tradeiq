@@ -7,7 +7,7 @@ from app.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import NotFoundError
 from app.models.user import User
-from app.models.wealth import AlertSubscription as AlertModel
+from app.models.alert import AlertSubscription as AlertModel
 from app.schemas.alert import AlertCreate, AlertUpdate, AlertResponse
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
