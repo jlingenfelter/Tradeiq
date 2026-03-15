@@ -13,7 +13,6 @@ class AlertSubscription(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    portfolio_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("portfolios.id"), nullable=False, index=True)
     alert_type: Mapped[str] = mapped_column(String(100), nullable=False)
     threshold_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     channel: Mapped[str] = mapped_column(String(50), nullable=False, default="in_app")

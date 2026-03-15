@@ -26,7 +26,7 @@ THRESHOLDS = {
 }
 
 
-def generate_warnings(db: Session, portfolio_id: str, analytics_snapshot_id: str) -> list[Warning]:
+def generate_warnings(db: Session, portfolio_id: str, analytics_snapshot_id: str, user_id: uuid.UUID | None = None) -> list[Warning]:
     snapshot = db.query(AnalyticsSnapshot).filter(
         AnalyticsSnapshot.id == uuid.UUID(analytics_snapshot_id)
     ).first()
@@ -36,6 +36,10 @@ def generate_warnings(db: Session, portfolio_id: str, analytics_snapshot_id: str
     warnings: list[Warning] = []
     pid = uuid.UUID(portfolio_id)
 
+    # Determine user_id from portfolio if not provided
+    if not user_id and snapshot.portfolio:
+        user_id = snapshot.portfolio.user_id
+
     # Single-stock concentration
     if snapshot.holdings_detail:
         top = snapshot.holdings_detail[0] if snapshot.holdings_detail else None
@@ -44,6 +48,7 @@ def generate_warnings(db: Session, portfolio_id: str, analytics_snapshot_id: str
             severity = _get_severity(weight, THRESHOLDS["single_stock_concentration"])
             if severity:
                 warnings.append(Warning(
+                    user_id=user_id,
                     portfolio_id=pid,
                     analytics_snapshot_id=snapshot.id,
                     warning_type="single_stock_concentration",
@@ -64,6 +69,7 @@ def generate_warnings(db: Session, portfolio_id: str, analytics_snapshot_id: str
     if severity:
         top_3_symbols = [h["symbol"] for h in (snapshot.holdings_detail or [])[:3]]
         warnings.append(Warning(
+            user_id=user_id,
             portfolio_id=pid,
             analytics_snapshot_id=snapshot.id,
             warning_type="top_3_concentration",
@@ -85,6 +91,7 @@ def generate_warnings(db: Session, portfolio_id: str, analytics_snapshot_id: str
         severity = _get_severity(weight, THRESHOLDS["sector_concentration"])
         if severity:
             warnings.append(Warning(
+                user_id=user_id,
                 portfolio_id=pid,
                 analytics_snapshot_id=snapshot.id,
                 warning_type="sector_concentration",
@@ -107,6 +114,7 @@ def generate_warnings(db: Session, portfolio_id: str, analytics_snapshot_id: str
         severity = _get_severity(weight, THRESHOLDS["country_concentration"])
         if severity:
             warnings.append(Warning(
+                user_id=user_id,
                 portfolio_id=pid,
                 analytics_snapshot_id=snapshot.id,
                 warning_type="country_concentration",
@@ -119,7 +127,7 @@ def generate_warnings(db: Session, portfolio_id: str, analytics_snapshot_id: str
                     "threshold": THRESHOLDS["country_concentration"][severity],
                 },
             ))
-            break  # Only warn on the top country
+            break
 
     # Low diversification
     holdings_count = len(snapshot.holdings_detail or [])
@@ -138,6 +146,7 @@ def generate_warnings(db: Session, portfolio_id: str, analytics_snapshot_id: str
 
         if severity:
             warnings.append(Warning(
+                user_id=user_id,
                 portfolio_id=pid,
                 analytics_snapshot_id=snapshot.id,
                 warning_type="low_diversification",
@@ -171,7 +180,6 @@ def _get_severity(value: float, thresholds: dict[str, float]) -> str | None:
 
 
 def get_latest_warnings(db: Session, portfolio_id: uuid.UUID) -> list[Warning]:
-    # Get warnings from the latest analytics snapshot
     latest_snapshot = (
         db.query(AnalyticsSnapshot)
         .filter(AnalyticsSnapshot.portfolio_id == portfolio_id)

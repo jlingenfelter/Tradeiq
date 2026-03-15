@@ -23,7 +23,7 @@ export function CountryExposureChart({ data }: Props) {
             <BarChart data={chartData} layout="vertical" margin={{ left: 80 }}>
               <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
               <YAxis type="category" dataKey="name" width={75} tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
+              <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
               <Bar dataKey="weight" fill="#3b82f6" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>

@@ -39,7 +39,7 @@ export function SectorExposureChart({ data }: Props) {
                   <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
+              <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
               <Legend
                 layout="vertical"
                 align="right"

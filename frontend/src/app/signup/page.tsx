@@ -11,10 +11,13 @@ import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import type { TokenResponse } from "@/types";
 
+const CURRENCIES = ["USD", "GBP", "EUR", "CHF", "CAD", "AUD", "JPY", "SGD", "HKD"];
+
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [baseCurrency, setBaseCurrency] = useState("USD");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -35,9 +38,11 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      const res = await api.post<TokenResponse>("/auth/signup", { email, password });
+      const res = await api.post<TokenResponse>("/auth/signup", {
+        email, password, base_currency: baseCurrency,
+      });
       login(res.access_token, res.user);
-      router.push("/onboarding");
+      router.push("/overview");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
@@ -50,7 +55,7 @@ export default function SignupPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Create Account</CardTitle>
-          <CardDescription>Start monitoring your portfolio today</CardDescription>
+          <CardDescription>Start tracking your wealth today</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,6 +93,19 @@ export default function SignupPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="currency">Base Currency</Label>
+              <select
+                id="currency"
+                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm"
+                value={baseCurrency}
+                onChange={(e) => setBaseCurrency(e.target.value)}
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating account..." : "Create account"}

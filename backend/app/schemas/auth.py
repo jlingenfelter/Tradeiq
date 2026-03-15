@@ -6,6 +6,8 @@ from pydantic import BaseModel, EmailStr
 class SignupRequest(BaseModel):
     email: EmailStr
     password: str
+    base_currency: str = "USD"
+    timezone: str = "UTC"
 
 
 class LoginRequest(BaseModel):
@@ -16,10 +18,17 @@ class LoginRequest(BaseModel):
 class UserResponse(BaseModel):
     id: str
     email: str
+    base_currency: str
+    timezone: str
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class UserUpdateRequest(BaseModel):
+    base_currency: str | None = None
+    timezone: str | None = None
 
 
 class TokenResponse(BaseModel):

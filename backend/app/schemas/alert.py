@@ -18,7 +18,6 @@ class AlertUpdate(BaseModel):
 
 class AlertResponse(BaseModel):
     id: str
-    portfolio_id: str
     alert_type: str
     threshold_json: dict
     channel: str

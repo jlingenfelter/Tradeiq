@@ -2,6 +2,8 @@
 export interface User {
   id: string;
   email: string;
+  base_currency: string;
+  timezone: string;
   created_at: string;
 }
 
@@ -11,7 +13,7 @@ export interface TokenResponse {
   user: User;
 }
 
-// Portfolio
+// Portfolio (investment submodule)
 export interface Portfolio {
   id: string;
   name: string;
@@ -46,7 +48,7 @@ export interface Position {
   country?: string;
 }
 
-// Analytics
+// Analytics (portfolio-level)
 export interface AnalyticsSnapshot {
   id: string;
   portfolio_id: string;
@@ -81,16 +83,17 @@ export interface HealthScoreBreakdown {
 export type WarningSeverity = "info" | "medium" | "high" | "critical";
 
 export interface Warning {
-  id: string;
+  id?: string;
   warning_type: string;
   severity: WarningSeverity;
   title: string;
   description: string;
-  evidence_json: Record<string, unknown>;
-  triggered_at: string;
+  evidence_json?: Record<string, unknown>;
+  evidence?: Record<string, unknown>;
+  triggered_at?: string;
 }
 
-// Dashboard
+// Portfolio Dashboard
 export interface DashboardResponse {
   portfolio_id: string;
   portfolio_name: string;
@@ -113,6 +116,113 @@ export interface DashboardResponse {
   ai_summary: string | null;
 }
 
+// ── Wealth Tracking ──
+
+export interface WealthContainer {
+  id: string;
+  name: string;
+  container_type: string;
+  institution_name: string | null;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Asset {
+  id: string;
+  container_id: string | null;
+  asset_class: string;
+  asset_subclass: string | null;
+  name: string;
+  symbol: string | null;
+  quantity: number | null;
+  unit_value: number | null;
+  current_value: number;
+  cost_basis: number | null;
+  currency: string;
+  ownership_pct: number | null;
+  liquidity_category: string;
+  valuation_source: string;
+  valuation_date: string;
+  country: string | null;
+  sector: string | null;
+  notes: string | null;
+  metadata_json: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Liability {
+  id: string;
+  container_id: string | null;
+  liability_type: string;
+  name: string;
+  current_balance: number;
+  currency: string;
+  interest_rate: number | null;
+  monthly_payment: number | null;
+  due_date: string | null;
+  linked_asset_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AllocationItem {
+  category: string;
+  value: number;
+  weight: number;
+}
+
+export interface ConcentrationItem {
+  label: string;
+  value: number;
+  weight_of_assets: number;
+}
+
+export interface WealthHealthBreakdown {
+  overall: number;
+  liquidity: number;
+  concentration: number;
+  leverage: number;
+  diversification: number;
+  data_freshness: number;
+  public_market_risk: number;
+}
+
+export interface WealthDashboardResponse {
+  base_currency: string;
+  total_assets: number;
+  total_liabilities: number;
+  net_worth: number;
+  net_worth_change_30d: number | null;
+  liquid_assets: number;
+  illiquid_assets: number;
+  liquid_net_worth: number;
+  cash_value: number;
+  investment_value: number;
+  property_value: number;
+  crypto_value: number;
+  business_value: number;
+  pension_value: number;
+  other_asset_value: number;
+  debt_value: number;
+  allocation: AllocationItem[];
+  top_concentrations: ConcentrationItem[];
+  top_warnings: Warning[];
+  health_score: number;
+  health_score_breakdown: WealthHealthBreakdown;
+  ai_summary: string | null;
+}
+
+export interface NetWorthHistoryItem {
+  date: string;
+  total_assets: number;
+  total_liabilities: number;
+  net_worth: number;
+  liquid_assets: number;
+}
+
 // Chat
 export interface ChatMessage {
   id: string;
@@ -123,7 +233,7 @@ export interface ChatMessage {
 
 export interface ChatSession {
   id: string;
-  portfolio_id: string;
+  portfolio_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -131,9 +241,55 @@ export interface ChatSession {
 // Alerts
 export interface AlertSubscription {
   id: string;
-  portfolio_id: string;
   alert_type: string;
   threshold_json: Record<string, unknown>;
   channel: string;
   enabled: boolean;
 }
+
+// Asset class constants
+export const ASSET_CLASSES = [
+  "cash",
+  "stock",
+  "etf",
+  "mutual_fund",
+  "bond",
+  "pension",
+  "crypto",
+  "property",
+  "business_equity",
+  "gold",
+  "watch",
+  "collectible",
+  "private_loan_receivable",
+  "other",
+] as const;
+
+export const LIABILITY_TYPES = [
+  "mortgage",
+  "loan",
+  "credit_card",
+  "tax",
+  "margin",
+  "business_debt",
+  "other",
+] as const;
+
+export const LIQUIDITY_CATEGORIES = [
+  "highly_liquid",
+  "liquid",
+  "semi_liquid",
+  "illiquid",
+] as const;
+
+export const CONTAINER_TYPES = [
+  "brokerage",
+  "pension",
+  "bank",
+  "crypto_wallet",
+  "property",
+  "business",
+  "liability_account",
+  "collectibles",
+  "manual",
+] as const;

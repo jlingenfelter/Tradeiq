@@ -4,7 +4,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 interface Risk {
-  type: string;
+  warning_type?: string;
+  type?: string;
   severity: string;
   title: string;
   description: string;

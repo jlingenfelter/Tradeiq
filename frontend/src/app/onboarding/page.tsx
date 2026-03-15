@@ -41,7 +41,7 @@ export default function OnboardingPage() {
 
   function handleDone() {
     if (portfolio) {
-      router.push("/dashboard");
+      router.push("/overview");
     }
   }
 

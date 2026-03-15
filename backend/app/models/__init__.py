@@ -7,6 +7,10 @@ from app.models.warning import Warning
 from app.models.chat import ChatSession, ChatMessage
 from app.models.alert import AlertSubscription
 from app.models.audit import AuditLog
+from app.models.wealth import (
+    WealthContainer, Asset, Liability, WealthSnapshot,
+    AllocationSnapshot, ImportJob, AISummary,
+)
 
 __all__ = [
     "User",
@@ -22,4 +26,11 @@ __all__ = [
     "ChatMessage",
     "AlertSubscription",
     "AuditLog",
+    "WealthContainer",
+    "Asset",
+    "Liability",
+    "WealthSnapshot",
+    "AllocationSnapshot",
+    "ImportJob",
+    "AISummary",
 ]

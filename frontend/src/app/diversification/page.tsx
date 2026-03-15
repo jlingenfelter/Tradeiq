@@ -81,7 +81,7 @@ export default function DiversificationPage() {
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} />
+                      <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
                       <Legend formatter={(v: string) => <span className="text-xs">{v}</span>} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -102,7 +102,7 @@ export default function DiversificationPage() {
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} />
+                      <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
                       <Legend formatter={(v: string) => <span className="text-xs">{v}</span>} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -111,12 +111,12 @@ export default function DiversificationPage() {
             </div>
 
             {/* Benchmark Comparison */}
-            {analytics?.benchmark_comparison && (
+            {analytics?.benchmark_comparison && Array.isArray(analytics.benchmark_comparison) && analytics.benchmark_comparison.length > 0 && (
               <Card>
                 <CardHeader><CardTitle className="text-base">Benchmark Comparison (vs S&P 500)</CardTitle></CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {analytics.benchmark_comparison.map((item: { sector: string; portfolio_weight: number; benchmark_weight: number; difference: number }) => (
+                    {(analytics.benchmark_comparison as Array<{ sector: string; portfolio_weight: number; benchmark_weight: number; difference: number }>).map((item) => (
                       <div key={item.sector} className="flex items-center gap-3 text-sm">
                         <div className="w-40 truncate">{item.sector}</div>
                         <div className="flex-1 flex items-center gap-2">

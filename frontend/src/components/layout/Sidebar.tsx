@@ -4,16 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, List, ShieldAlert, PieChart, AlertTriangle,
-  MessageSquare, Settings, LogOut,
+  LayoutDashboard, Wallet, CreditCard, PieChart,
+  TrendingUp, AlertTriangle, MessageSquare, Settings,
+  LogOut, Briefcase,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Holdings", href: "/holdings", icon: List },
-  { name: "Risk", href: "/risk", icon: ShieldAlert },
-  { name: "Diversification", href: "/diversification", icon: PieChart },
+  { name: "Overview", href: "/overview", icon: LayoutDashboard },
+  { name: "Assets", href: "/assets", icon: Wallet },
+  { name: "Liabilities", href: "/liabilities", icon: CreditCard },
+  { name: "Portfolio", href: "/dashboard", icon: Briefcase },
+  { name: "Allocation & Risk", href: "/allocation", icon: PieChart },
+  { name: "History", href: "/history", icon: TrendingUp },
   { name: "Warnings", href: "/warnings", icon: AlertTriangle },
   { name: "Ask AI", href: "/chat", icon: MessageSquare },
   { name: "Settings", href: "/settings", icon: Settings },
@@ -26,7 +29,7 @@ export function Sidebar() {
   return (
     <aside className="flex h-screen w-60 flex-col border-r border-neutral-200 bg-white">
       <div className="flex h-14 items-center border-b border-neutral-200 px-4">
-        <h1 className="text-lg font-semibold tracking-tight">Portfolio Copilot</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Wealth Copilot</h1>
       </div>
       <nav className="flex-1 space-y-1 p-3">
         {navigation.map((item) => {

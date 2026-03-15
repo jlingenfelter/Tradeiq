@@ -19,11 +19,13 @@ interface Props {
 }
 
 const SUGGESTED_QUESTIONS = [
-  "What is my biggest risk?",
-  "How concentrated am I?",
-  "What happens if my top stock falls 20%?",
-  "How exposed am I to technology?",
-  "Why is my health score this level?",
+  "What is my current net worth?",
+  "How liquid am I?",
+  "What is my biggest concentration?",
+  "How leveraged am I?",
+  "What should I review first?",
+  "What would happen if my stocks fell 20%?",
+  "How much of my wealth is in property?",
 ];
 
 export function ChatWindow({ messages, onSend, onClear, isLoading }: Props) {
@@ -48,9 +50,9 @@ export function ChatWindow({ messages, onSend, onClear, isLoading }: Props) {
         {messages.length === 0 && (
           <div className="space-y-4 pt-8">
             <div className="text-center">
-              <h3 className="text-lg font-semibold text-neutral-700">Ask about your portfolio</h3>
+              <h3 className="text-lg font-semibold text-neutral-700">Ask about your wealth</h3>
               <p className="text-sm text-neutral-500 mt-1">
-                Get AI-powered insights based on your actual portfolio data
+                Get AI-powered insights based on your actual financial data
               </p>
             </div>
             <div className="flex flex-wrap gap-2 justify-center">
@@ -88,7 +90,7 @@ export function ChatWindow({ messages, onSend, onClear, isLoading }: Props) {
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about your portfolio..."
+            placeholder="Ask about your wealth..."
             disabled={isLoading}
             className="flex-1"
           />

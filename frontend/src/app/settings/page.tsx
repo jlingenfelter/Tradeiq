@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,56 +8,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
-import { usePortfolios } from "@/hooks/use-portfolio";
 import { api } from "@/lib/api";
-import type { Portfolio, AlertSubscription } from "@/types";
 import { Trash2 } from "lucide-react";
+
+const CURRENCIES = ["USD", "GBP", "EUR", "CHF", "CAD", "AUD", "JPY", "SGD", "HKD"];
+const TIMEZONES = [
+  "UTC", "America/New_York", "America/Chicago", "America/Los_Angeles",
+  "Europe/London", "Europe/Paris", "Europe/Zurich",
+  "Asia/Singapore", "Asia/Hong_Kong", "Asia/Tokyo",
+  "Australia/Sydney",
+];
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
-  const { data: portfolios, refetch: refetchPortfolios } = usePortfolios();
-  const [alerts, setAlerts] = useState<AlertSubscription[]>([]);
-  const [portfolioId, setPortfolioId] = useState("");
+  const [baseCurrency, setBaseCurrency] = useState(user?.base_currency || "USD");
+  const [timezone, setTimezone] = useState(user?.timezone || "UTC");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    if (portfolios && portfolios.length > 0 && !portfolioId) {
-      setPortfolioId(portfolios[0].id);
-    }
-  }, [portfolios, portfolioId]);
-
-  useEffect(() => {
-    if (portfolioId) {
-      api.get<AlertSubscription[]>(`/portfolios/${portfolioId}/alerts`)
-        .then(setAlerts)
-        .catch(() => {});
-    }
-  }, [portfolioId]);
-
-  async function handleAddAlert(type: string) {
-    if (!portfolioId) return;
+  async function handleSavePreferences() {
+    setSaving(true);
     try {
-      await api.post(`/portfolios/${portfolioId}/alerts`, {
-        alert_type: type,
-        channel: "in_app",
-      });
-      const updated = await api.get<AlertSubscription[]>(`/portfolios/${portfolioId}/alerts`);
-      setAlerts(updated);
+      await api.patch("/auth/me", { base_currency: baseCurrency, timezone });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
     } catch {}
-  }
-
-  async function handleDeleteAlert(alertId: string) {
-    try {
-      await api.delete(`/alerts/${alertId}`);
-      setAlerts(alerts.filter((a) => a.id !== alertId));
-    } catch {}
-  }
-
-  async function handleDeletePortfolio(id: string) {
-    if (!confirm("Delete this portfolio? This cannot be undone.")) return;
-    try {
-      await api.delete(`/portfolios/${id}`);
-      refetchPortfolios();
-    } catch {}
+    setSaving(false);
   }
 
   return (
@@ -90,67 +66,56 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Portfolios */}
+        {/* Preferences */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Portfolios</CardTitle>
-            <CardDescription>Manage your portfolios</CardDescription>
+            <CardTitle className="text-base">Preferences</CardTitle>
+            <CardDescription>Configure your display settings</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {portfolios?.map((p) => (
-                <div key={p.id} className="flex items-center justify-between rounded-md border px-4 py-3">
-                  <div>
-                    <div className="text-sm font-medium">{p.name}</div>
-                    <div className="text-xs text-neutral-500">{p.base_currency}</div>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleDeletePortfolio(p.id)}>
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                </div>
-              ))}
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Base Currency</Label>
+              <select
+                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm mt-1"
+                value={baseCurrency}
+                onChange={(e) => setBaseCurrency(e.target.value)}
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <p className="text-xs text-neutral-400 mt-1">
+                All values will be displayed in this currency
+              </p>
             </div>
+            <div>
+              <Label>Timezone</Label>
+              <select
+                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm mt-1"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+              >
+                {TIMEZONES.map((tz) => (
+                  <option key={tz} value={tz}>{tz}</option>
+                ))}
+              </select>
+            </div>
+            <Button onClick={handleSavePreferences} disabled={saving}>
+              {saving ? "Saving..." : saved ? "Saved" : "Save Preferences"}
+            </Button>
           </CardContent>
         </Card>
 
-        {/* Alert Subscriptions */}
+        {/* Data Management */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Alert Subscriptions</CardTitle>
-            <CardDescription>Get notified about portfolio changes</CardDescription>
+            <CardTitle className="text-base">Data</CardTitle>
+            <CardDescription>Manage your wealth data</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2 mb-4">
-              {alerts.map((a) => (
-                <div key={a.id} className="flex items-center justify-between rounded-md border px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm font-medium">{a.alert_type.replace(/_/g, " ")}</div>
-                    <Badge variant={a.enabled ? "success" : "secondary"}>
-                      {a.enabled ? "Active" : "Paused"}
-                    </Badge>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleDeleteAlert(a.id)}>
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                </div>
-              ))}
-              {alerts.length === 0 && (
-                <p className="text-sm text-neutral-500">No alert subscriptions</p>
-              )}
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {["concentration_warning", "health_score_change", "weekly_summary"].map((type) => (
-                <Button
-                  key={type}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAddAlert(type)}
-                  disabled={alerts.some((a) => a.alert_type === type)}
-                >
-                  + {type.replace(/_/g, " ")}
-                </Button>
-              ))}
-            </div>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-neutral-500">
+              Your data is stored securely and is only accessible by you.
+            </p>
           </CardContent>
         </Card>
 
@@ -158,11 +123,11 @@ export default function SettingsPage() {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-neutral-400 leading-relaxed">
-              Portfolio Copilot is a read-only portfolio monitoring and analysis tool. It does not
-              execute trades, manage portfolios, or provide personalized investment advice. All
-              analytics are for informational purposes only. Past performance does not guarantee
-              future results. Always consult a qualified financial advisor before making investment
-              decisions.
+              Wealth Copilot is a read-only wealth monitoring and analysis tool. It does not
+              execute trades, manage portfolios, move money, or provide personalized investment advice.
+              All analytics are for informational purposes only. Asset valuations may be based on
+              manual entries or estimates. Past performance does not guarantee future results.
+              Always consult a qualified financial advisor before making investment decisions.
             </p>
           </CardContent>
         </Card>

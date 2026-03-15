@@ -5,6 +5,8 @@ import { createContext, useContext } from "react";
 export interface User {
   id: string;
   email: string;
+  base_currency: string;
+  timezone: string;
   created_at: string;
 }
 

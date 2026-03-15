@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { usePortfolios } from "@/hooks/use-portfolio";
-import { useWarnings } from "@/hooks/use-analytics";
+import { useWealthDashboard } from "@/hooks/use-wealth";
 import type { WarningSeverity } from "@/types";
 
 const SEVERITY_ORDER: WarningSeverity[] = ["critical", "high", "medium", "info"];
@@ -21,24 +20,18 @@ function severityVariant(severity: string) {
 }
 
 export default function WarningsPage() {
-  const { data: portfolios } = usePortfolios();
-  const [portfolioId, setPortfolioId] = useState("");
+  const { data: dashboard, isLoading } = useWealthDashboard();
   const [filter, setFilter] = useState<string | undefined>();
 
-  useEffect(() => {
-    if (portfolios && portfolios.length > 0 && !portfolioId) {
-      setPortfolioId(portfolios[0].id);
-    }
-  }, [portfolios, portfolioId]);
-
-  const { data: warnings, isLoading } = useWarnings(portfolioId, filter);
+  const warnings = dashboard?.top_warnings || [];
+  const filtered = filter ? warnings.filter((w) => w.severity === filter) : warnings;
 
   return (
     <AppShell>
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold">Warnings</h2>
-          <p className="text-sm text-neutral-500">Portfolio risk alerts and issues</p>
+          <p className="text-sm text-neutral-500">Risk alerts and issues across your wealth</p>
         </div>
 
         {/* Severity Filter */}
@@ -48,26 +41,30 @@ export default function WarningsPage() {
             size="sm"
             onClick={() => setFilter(undefined)}
           >
-            All
+            All ({warnings.length})
           </Button>
-          {SEVERITY_ORDER.map((s) => (
-            <Button
-              key={s}
-              variant={filter === s ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilter(s)}
-            >
-              {s.charAt(0).toUpperCase() + s.slice(1)}
-            </Button>
-          ))}
+          {SEVERITY_ORDER.map((s) => {
+            const count = warnings.filter((w) => w.severity === s).length;
+            if (count === 0) return null;
+            return (
+              <Button
+                key={s}
+                variant={filter === s ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilter(s)}
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)} ({count})
+              </Button>
+            );
+          })}
         </div>
 
         {isLoading ? (
           <div className="text-neutral-500">Loading warnings...</div>
-        ) : warnings && warnings.length > 0 ? (
+        ) : filtered.length > 0 ? (
           <div className="space-y-3">
-            {warnings.map((w) => (
-              <Card key={w.id}>
+            {filtered.map((w, i) => (
+              <Card key={i}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <Badge variant={severityVariant(w.severity)} className="mt-0.5 shrink-0">
@@ -76,18 +73,13 @@ export default function WarningsPage() {
                     <div className="flex-1">
                       <div className="font-medium">{w.title}</div>
                       <div className="text-sm text-neutral-500 mt-1">{w.description}</div>
-                      {w.evidence_json && Object.keys(w.evidence_json).length > 0 && (
-                        <div className="mt-2 flex gap-2 flex-wrap">
-                          {Object.entries(w.evidence_json).map(([key, val]) => (
-                            <span key={key} className="text-xs bg-neutral-100 rounded px-2 py-1">
-                              {key}: {typeof val === "number" ? val.toFixed?.(2) ?? val : String(val)}
-                            </span>
-                          ))}
+                      {w.warning_type && (
+                        <div className="mt-2">
+                          <span className="text-xs bg-neutral-100 rounded px-2 py-1">
+                            {w.warning_type.replace(/_/g, " ")}
+                          </span>
                         </div>
                       )}
-                      <div className="text-xs text-neutral-400 mt-2">
-                        {new Date(w.triggered_at).toLocaleString()}
-                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -95,7 +87,7 @@ export default function WarningsPage() {
             ))}
           </div>
         ) : (
-          <div className="text-neutral-500">No warnings detected. Your portfolio looks balanced.</div>
+          <div className="text-neutral-500">No warnings detected. Your wealth profile looks balanced.</div>
         )}
       </div>
     </AppShell>

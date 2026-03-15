@@ -5,12 +5,17 @@ from app.core.security import hash_password, verify_password, create_access_toke
 from app.core.exceptions import ConflictError, BadRequestError
 
 
-def create_user(db: Session, email: str, password: str) -> User:
+def create_user(db: Session, email: str, password: str, base_currency: str = "USD", timezone: str = "UTC") -> User:
     existing = db.query(User).filter(User.email == email).first()
     if existing:
         raise ConflictError("An account with this email already exists")
 
-    user = User(email=email, hashed_password=hash_password(password))
+    user = User(
+        email=email,
+        hashed_password=hash_password(password),
+        base_currency=base_currency,
+        timezone=timezone,
+    )
     db.add(user)
     db.commit()
     db.refresh(user)

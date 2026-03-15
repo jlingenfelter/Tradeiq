@@ -11,11 +11,15 @@ from app.api.warnings import router as warnings_router
 from app.api.dashboard import router as dashboard_router
 from app.api.chat import router as chat_router
 from app.api.alerts import router as alerts_router
+from app.api.containers import router as containers_router
+from app.api.assets import router as assets_router
+from app.api.liabilities import router as liabilities_router
+from app.api.wealth_dashboard import router as wealth_dashboard_router
 
 app = FastAPI(
-    title="Portfolio Copilot",
-    description="AI-powered portfolio monitoring platform",
-    version="0.1.0",
+    title="Wealth Copilot",
+    description="AI-powered wealth tracking and portfolio monitoring platform",
+    version="0.2.0",
 )
 
 app.add_middleware(
@@ -26,14 +30,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Auth
 app.include_router(auth_router)
+
+# Wealth tracking
+app.include_router(containers_router)
+app.include_router(assets_router)
+app.include_router(liabilities_router)
+app.include_router(wealth_dashboard_router)
+
+# Portfolio (investment submodule)
 app.include_router(portfolios_router)
 app.include_router(positions_router)
 app.include_router(ingestion_router)
 app.include_router(analytics_router)
 app.include_router(warnings_router)
 app.include_router(dashboard_router)
+
+# AI & chat
 app.include_router(chat_router)
+
+# Alerts
 app.include_router(alerts_router)
 
 

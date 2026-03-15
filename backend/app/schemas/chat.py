@@ -25,7 +25,7 @@ class ChatMessageResponse(BaseModel):
 
 class ChatSessionResponse(BaseModel):
     id: str
-    portfolio_id: str
+    portfolio_id: str | None = None
     created_at: datetime
     updated_at: datetime
     messages: list[ChatMessageResponse] = []

@@ -26,7 +26,7 @@ export default function LoginPage() {
     try {
       const res = await api.post<TokenResponse>("/auth/login", { email, password });
       login(res.access_token, res.user);
-      router.push("/dashboard");
+      router.push("/overview");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -38,8 +38,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Portfolio Copilot</CardTitle>
-          <CardDescription>Sign in to monitor your portfolio</CardDescription>
+          <CardTitle className="text-2xl">Wealth Copilot</CardTitle>
+          <CardDescription>Sign in to monitor your wealth</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

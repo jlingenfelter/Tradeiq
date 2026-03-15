@@ -4,6 +4,30 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { DashboardResponse, Warning } from "@/types";
 
+interface AnalyticsLatest {
+  total_value: number;
+  health_score: number;
+  holdings: Array<{
+    symbol: string;
+    name: string;
+    quantity: number;
+    price: number;
+    market_value: number;
+    weight: number;
+    unrealized_pnl: number | null;
+    sector: string | null;
+    country: string | null;
+  }>;
+  sector_exposure: Record<string, number>;
+  country_exposure: Record<string, number>;
+  stress_tests: unknown[];
+  benchmark_comparison: unknown[];
+  position_count: number;
+  n_sectors: number;
+  n_countries: number;
+  hhi: number;
+}
+
 export function useDashboard(portfolioId: string) {
   return useQuery<DashboardResponse>({
     queryKey: ["dashboard", portfolioId],
@@ -23,7 +47,7 @@ export function useWarnings(portfolioId: string, severity?: string) {
 }
 
 export function useAnalyticsLatest(portfolioId: string) {
-  return useQuery({
+  return useQuery<AnalyticsLatest>({
     queryKey: ["analytics", portfolioId],
     queryFn: () => api.get(`/portfolios/${portfolioId}/analytics/latest`),
     enabled: !!portfolioId,
