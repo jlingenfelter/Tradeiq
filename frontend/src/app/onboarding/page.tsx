@@ -128,7 +128,12 @@ export default function OnboardingPage() {
       const result = await api.post<SyncResult>(endpoint, { ...body, portfolio_id: portfolio.id });
       setSyncResult(result);
       const extra = result.chain ? ` from ${result.chain}` : "";
-      setStatus(`Imported ${result.imported} positions${extra}`);
+      if (result.imported === 0) {
+        const errMsg = result.errors.length > 0 ? result.errors[0] : "No positions found to import";
+        setStatus(`Error: ${errMsg}`);
+      } else {
+        setStatus(`Imported ${result.imported} positions${extra}`);
+      }
     } catch (err: unknown) {
       setStatus(err instanceof Error ? err.message : "Sync failed");
     } finally {
@@ -267,12 +272,16 @@ export default function OnboardingPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Connect Trading 212</CardTitle>
-                <CardDescription>Enter your API key from Trading 212 Settings &rarr; API (Beta)</CardDescription>
+                <CardDescription>Enter your API key and secret from Trading 212 Settings &rarr; API (Beta)</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>API Key</Label>
                   <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Paste your Trading 212 API key" />
+                </div>
+                <div className="space-y-2">
+                  <Label>API Secret</Label>
+                  <Input type="password" value={apiSecret} onChange={(e) => setApiSecret(e.target.value)} placeholder="Paste your Trading 212 API secret" />
                 </div>
                 <div className="space-y-2">
                   <Label>Environment</Label>
@@ -283,10 +292,10 @@ export default function OnboardingPage() {
                 </div>
                 {renderStatus()}
                 <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1" onClick={() => handleTest("/trading212/test", { api_key: apiKey, environment: env })} disabled={!apiKey || loading}>
+                  <Button variant="outline" className="flex-1" onClick={() => handleTest("/trading212/test", { api_key: apiKey, api_secret: apiSecret, environment: env })} disabled={!apiKey || !apiSecret || loading}>
                     Test Connection
                   </Button>
-                  <Button className="flex-1" onClick={() => handleSync("/trading212/sync", { api_key: apiKey, environment: env })} disabled={!apiKey || loading}>
+                  <Button className="flex-1" onClick={() => handleSync("/trading212/sync", { api_key: apiKey, api_secret: apiSecret, environment: env })} disabled={!apiKey || !apiSecret || loading}>
                     {loading ? "Importing..." : "Import Positions"}
                   </Button>
                 </div>

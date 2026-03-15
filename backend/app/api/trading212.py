@@ -18,6 +18,7 @@ router = APIRouter(prefix="/trading212", tags=["trading212"])
 
 class T212ConnectRequest(BaseModel):
     api_key: str
+    api_secret: str
     portfolio_id: str
     environment: str = "live"  # "live" or "demo"
 
@@ -30,6 +31,7 @@ class T212SyncResponse(BaseModel):
 
 class T212TestRequest(BaseModel):
     api_key: str
+    api_secret: str
     environment: str = "live"
 
 
@@ -47,7 +49,7 @@ def test_connection(
 ):
     """Test Trading 212 API key connection."""
     try:
-        info = fetch_t212_account_info(body.api_key, body.environment)
+        info = fetch_t212_account_info(body.api_key, body.api_secret, body.environment)
         return T212TestResponse(
             success=True,
             account_id=str(info.get("id", "")),
@@ -69,5 +71,5 @@ def sync_positions(
 ):
     """Sync positions from Trading 212 into a portfolio."""
     portfolio = get_portfolio(db, uuid.UUID(body.portfolio_id), current_user)
-    result = import_t212_positions(db, portfolio, body.api_key, body.environment)
+    result = import_t212_positions(db, portfolio, body.api_key, body.api_secret, body.environment)
     return T212SyncResponse(**result)

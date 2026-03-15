@@ -1,5 +1,6 @@
 """Trading 212 API integration for fetching portfolio positions."""
 
+import base64
 import httpx
 from sqlalchemy.orm import Session
 
@@ -12,27 +13,28 @@ T212_LIVE_URL = "https://live.trading212.com/api/v0"
 T212_DEMO_URL = "https://demo.trading212.com/api/v0"
 
 
-def _get_headers(api_key: str) -> dict:
+def _get_headers(api_key: str, api_secret: str) -> dict:
+    credentials = base64.b64encode(f"{api_key}:{api_secret}".encode()).decode()
     return {
-        "Authorization": api_key,
+        "Authorization": f"Basic {credentials}",
     }
 
 
-def fetch_t212_positions(api_key: str, environment: str = "live") -> list[dict]:
+def fetch_t212_positions(api_key: str, api_secret: str, environment: str = "live") -> list[dict]:
     """Fetch all open positions from Trading 212 API."""
     base_url = T212_LIVE_URL if environment == "live" else T212_DEMO_URL
 
     try:
         resp = httpx.get(
             f"{base_url}/equity/portfolio",
-            headers=_get_headers(api_key),
+            headers=_get_headers(api_key, api_secret),
             timeout=30,
         )
     except httpx.RequestError as e:
         raise BadRequestError(f"Failed to connect to Trading 212: {str(e)}")
 
     if resp.status_code == 401:
-        raise BadRequestError("Invalid Trading 212 API key")
+        raise BadRequestError("Invalid Trading 212 API key or secret")
     if resp.status_code == 403:
         raise BadRequestError("Trading 212 API key does not have portfolio permissions")
     if resp.status_code != 200:
@@ -41,19 +43,21 @@ def fetch_t212_positions(api_key: str, environment: str = "live") -> list[dict]:
     return resp.json()
 
 
-def fetch_t212_account_info(api_key: str, environment: str = "live") -> dict:
+def fetch_t212_account_info(api_key: str, api_secret: str, environment: str = "live") -> dict:
     """Fetch account info from Trading 212."""
     base_url = T212_LIVE_URL if environment == "live" else T212_DEMO_URL
 
     try:
         resp = httpx.get(
             f"{base_url}/equity/account/info",
-            headers=_get_headers(api_key),
+            headers=_get_headers(api_key, api_secret),
             timeout=30,
         )
     except httpx.RequestError as e:
         raise BadRequestError(f"Failed to connect to Trading 212: {str(e)}")
 
+    if resp.status_code == 401:
+        raise BadRequestError("Invalid Trading 212 API key or secret")
     if resp.status_code != 200:
         raise BadRequestError(f"Trading 212 API error: {resp.status_code}")
 
@@ -64,10 +68,11 @@ def import_t212_positions(
     db: Session,
     portfolio: Portfolio,
     api_key: str,
+    api_secret: str,
     environment: str = "live",
 ) -> dict:
     """Import all positions from Trading 212 into a portfolio."""
-    positions_data = fetch_t212_positions(api_key, environment)
+    positions_data = fetch_t212_positions(api_key, api_secret, environment)
 
     # Create or find the Trading 212 account
     account = db.query(Account).filter(
