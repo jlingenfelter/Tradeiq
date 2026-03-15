@@ -1,6 +1,9 @@
 """
 Wealth calculation engine — deterministic, auditable calculations for net worth,
 allocation, liquidity, concentration, leverage, and health score.
+
+Includes portfolio positions (from broker integrations and CSV imports) as part
+of the total wealth picture.
 """
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -11,6 +14,9 @@ from app.models.user import User
 from app.models.wealth import (
     Asset, Liability, WealthSnapshot, AllocationSnapshot, WealthContainer,
 )
+from app.models.portfolio import Portfolio, Account
+from app.models.position import Position
+from app.models.analytics import PortfolioSnapshot, AnalyticsSnapshot
 
 # ── Liquidity defaults by asset_class ──
 LIQUIDITY_DEFAULTS = {
@@ -52,8 +58,90 @@ LIQUID_CATEGORIES = {"highly_liquid", "liquid"}
 ILLIQUID_CATEGORIES = {"semi_liquid", "illiquid"}
 
 
+def _get_portfolio_asset_details(db: Session, user_id: uuid.UUID) -> list[dict]:
+    """
+    Pull all portfolio positions for a user and convert them into asset_detail dicts
+    that can be mixed into the wealth calculation. Uses the latest analytics snapshot
+    for market values; falls back to cost basis if no analytics available.
+    """
+    portfolios = db.query(Portfolio).filter(Portfolio.user_id == user_id).all()
+    if not portfolios:
+        return []
+
+    details = []
+    for portfolio in portfolios:
+        # Try to get holdings from the latest analytics snapshot
+        latest_analytics = (
+            db.query(AnalyticsSnapshot)
+            .filter(AnalyticsSnapshot.portfolio_id == portfolio.id)
+            .order_by(AnalyticsSnapshot.created_at.desc())
+            .first()
+        )
+
+        holdings_map: dict[str, dict] = {}
+        if latest_analytics and latest_analytics.holdings_detail:
+            for h in latest_analytics.holdings_detail:
+                holdings_map[h.get("symbol", "")] = h
+
+        # Get all positions across all accounts in this portfolio
+        positions = (
+            db.query(Position)
+            .join(Account)
+            .filter(Account.portfolio_id == portfolio.id)
+            .all()
+        )
+
+        for pos in positions:
+            h = holdings_map.get(pos.symbol, {})
+            market_value = h.get("market_value") or 0
+            # Fallback: use cost basis if no market value from analytics
+            if market_value == 0:
+                market_value = pos.cost_basis_total or (
+                    (pos.cost_basis_per_share or 0) * pos.quantity
+                )
+
+            price = h.get("price", 0)
+            sector = h.get("sector")
+            country = h.get("country")
+            asset_type = h.get("asset_type", pos.asset_type)
+
+            # Map position asset_type to wealth asset_class
+            if asset_type in ("crypto", "cryptocurrency"):
+                asset_class = "crypto"
+            elif asset_type in ("etf", "ETF"):
+                asset_class = "etf"
+            elif asset_type in ("mutual_fund",):
+                asset_class = "mutual_fund"
+            elif asset_type in ("bond",):
+                asset_class = "bond"
+            else:
+                asset_class = "stock"
+
+            category = ASSET_CLASS_CATEGORIES.get(asset_class, "Public Investments")
+            liq = LIQUIDITY_DEFAULTS.get(asset_class, "liquid")
+
+            details.append({
+                "id": str(pos.id),
+                "name": pos.asset_name,
+                "symbol": pos.symbol,
+                "asset_class": asset_class,
+                "category": category,
+                "value": round(market_value, 2),
+                "currency": pos.currency,
+                "liquidity": liq,
+                "country": country,
+                "sector": sector,
+                "valuation_date": (pos.last_synced_at or pos.updated_at).isoformat() if (pos.last_synced_at or pos.updated_at) else None,
+                "valuation_source": "market",
+                "source": "portfolio",  # tag so we know it came from positions
+                "portfolio_name": portfolio.name,
+            })
+
+    return details
+
+
 def compute_wealth_snapshot(db: Session, user_id: uuid.UUID) -> dict:
-    """Compute full wealth snapshot for a user."""
+    """Compute full wealth snapshot for a user, including portfolio positions."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         return {}
@@ -113,6 +201,38 @@ def compute_wealth_snapshot(db: Session, user_id: uuid.UUID) -> dict:
             "valuation_date": a.valuation_date.isoformat() if a.valuation_date else None,
             "valuation_source": a.valuation_source,
         })
+
+    # ── Include portfolio positions (broker/CSV imports) ──
+    portfolio_details = _get_portfolio_asset_details(db, user_id)
+    for pd in portfolio_details:
+        val = pd["value"]
+        if val <= 0:
+            continue
+        total_assets += val
+
+        liq = pd["liquidity"]
+        if liq in LIQUID_CATEGORIES:
+            liquid_assets += val
+        else:
+            illiquid_assets += val
+
+        category = pd["category"]
+        if category == "Cash":
+            cash_value += val
+        elif category == "Public Investments":
+            investment_value += val
+        elif category == "Property":
+            property_value += val
+        elif category == "Crypto":
+            crypto_value += val
+        elif category == "Business Equity":
+            business_value += val
+        elif category == "Pensions":
+            pension_value += val
+        else:
+            other_asset_value += val
+
+        asset_details.append(pd)
 
     total_liabilities = sum(l.current_balance for l in liabilities_list)
     net_worth = total_assets - total_liabilities

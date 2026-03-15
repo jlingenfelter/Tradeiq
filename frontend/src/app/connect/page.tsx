@@ -74,6 +74,7 @@ export default function ConnectPage() {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
       queryClient.invalidateQueries({ queryKey: ["connections"] });
+      queryClient.invalidateQueries({ queryKey: ["wealth-dashboard"] });
       refetchConnections();
     } catch (err) {
       console.error("Sync failed:", err);
@@ -158,6 +159,7 @@ export default function ConnectPage() {
         queryClient.invalidateQueries({ queryKey: ["analytics"] });
         queryClient.invalidateQueries({ queryKey: ["positions"] });
         queryClient.invalidateQueries({ queryKey: ["connections"] });
+        queryClient.invalidateQueries({ queryKey: ["wealth-dashboard"] });
       }
     } catch (err: unknown) {
       setStatus(err instanceof Error ? err.message : "Sync failed");
@@ -244,6 +246,7 @@ export default function ConnectPage() {
                       await api.post(`/portfolios/${selectedPortfolioId}/connections/sync-all`);
                       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
                       queryClient.invalidateQueries({ queryKey: ["analytics"] });
+                      queryClient.invalidateQueries({ queryKey: ["wealth-dashboard"] });
                       refetchConnections();
                     } finally {
                       setSyncingId(null);
