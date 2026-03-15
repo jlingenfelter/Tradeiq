@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.portfolio import Portfolio, Account
 from app.models.position import Position
 from app.core.exceptions import BadRequestError
+from app.services.name_resolver import resolve_stock_names
 
 
 TRADIER_LIVE_URL = "https://api.tradier.com"
@@ -100,6 +101,9 @@ def import_tradier_positions(
     skipped = 0
     errors = []
 
+    symbols_to_resolve = []
+    position_rows = []
+
     for pos in positions_data:
         try:
             symbol = pos.get("symbol", "")
@@ -115,21 +119,33 @@ def import_tradier_positions(
             cost_basis = float(pos.get("cost_basis", 0))
             avg_price = cost_basis / abs(qty) if qty != 0 and cost_basis else 0
 
-            position = Position(
-                account_id=account.id,
-                symbol=symbol,
-                asset_name=symbol,
-                asset_type="equity",
-                quantity=abs(qty),
-                cost_basis_per_share=avg_price,
-                cost_basis_total=cost_basis if cost_basis else None,
-                currency="USD",
-            )
-            db.add(position)
-            imported += 1
+            symbols_to_resolve.append(symbol)
+            position_rows.append({
+                "symbol": symbol,
+                "qty": abs(qty),
+                "avg_price": avg_price,
+                "cost_basis": cost_basis,
+            })
         except (ValueError, KeyError) as e:
             errors.append(f"Position {pos.get('symbol', '?')}: {str(e)}")
             skipped += 1
+
+    name_map = resolve_stock_names(db, symbols_to_resolve)
+
+    for row in position_rows:
+        symbol = row["symbol"]
+        position = Position(
+            account_id=account.id,
+            symbol=symbol,
+            asset_name=name_map.get(symbol.upper(), symbol),
+            asset_type="equity",
+            quantity=row["qty"],
+            cost_basis_per_share=row["avg_price"],
+            cost_basis_total=row["cost_basis"] if row["cost_basis"] else None,
+            currency="USD",
+        )
+        db.add(position)
+        imported += 1
 
     db.commit()
     return {"imported": imported, "skipped": skipped, "errors": errors[:20]}

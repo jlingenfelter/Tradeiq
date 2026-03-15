@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.portfolio import Account
 from app.models.position import Position
 from app.core.exceptions import BadRequestError
+from app.services.name_resolver import resolve_stock_names
 
 # In-memory store for CSV upload previews (use Redis in production)
 _csv_uploads: dict[str, dict] = {}
@@ -222,6 +223,18 @@ def confirm_csv_import(
         except (ValueError, KeyError) as e:
             errors.append(f"Row {i + 1}: {str(e)}")
             skipped += 1
+
+    db.flush()
+
+    # Resolve full names for positions that only have a symbol as name
+    symbol_only_positions = [p for p in db.new if isinstance(p, Position) and p.asset_name == p.symbol]
+    if symbol_only_positions:
+        symbols_needing_names = [p.symbol for p in symbol_only_positions]
+        name_map = resolve_stock_names(db, symbols_needing_names)
+        for p in symbol_only_positions:
+            resolved = name_map.get(p.symbol.upper(), p.symbol)
+            if resolved != p.symbol:
+                p.asset_name = resolved
 
     db.commit()
     return {"imported": imported, "skipped": skipped, "errors": errors[:20]}

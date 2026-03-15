@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.models.portfolio import Portfolio, Account
 from app.models.position import Position
 from app.core.exceptions import BadRequestError
+from app.services.name_resolver import resolve_stock_names
 
 
 T212_LIVE_URL = "https://live.trading212.com/api/v0"
@@ -96,6 +97,10 @@ def import_t212_positions(
     skipped = 0
     errors = []
 
+    # Collect symbols for batch name resolution
+    symbols_to_resolve = []
+    position_rows = []
+
     for pos in positions_data:
         try:
             ticker = pos.get("ticker", "")
@@ -113,23 +118,35 @@ def import_t212_positions(
 
             avg_price = pos.get("averagePrice", 0)
             current_price = pos.get("currentPrice", 0)
-            ppl = pos.get("ppl", 0)  # profit/loss
 
-            position = Position(
-                account_id=account.id,
-                symbol=symbol,
-                asset_name=symbol,
-                asset_type="equity",
-                quantity=quantity,
-                cost_basis_per_share=avg_price,
-                cost_basis_total=avg_price * quantity if avg_price else None,
-                currency="USD",
-            )
-            db.add(position)
-            imported += 1
+            symbols_to_resolve.append(symbol)
+            position_rows.append({
+                "symbol": symbol,
+                "quantity": quantity,
+                "avg_price": avg_price,
+                "current_price": current_price,
+            })
         except (ValueError, KeyError) as e:
             errors.append(f"Position {pos.get('ticker', '?')}: {str(e)}")
             skipped += 1
+
+    # Resolve full stock names via yfinance metadata
+    name_map = resolve_stock_names(db, symbols_to_resolve)
+
+    for row in position_rows:
+        symbol = row["symbol"]
+        position = Position(
+            account_id=account.id,
+            symbol=symbol,
+            asset_name=name_map.get(symbol, symbol),
+            asset_type="equity",
+            quantity=row["quantity"],
+            cost_basis_per_share=row["avg_price"] or row["current_price"] or None,
+            cost_basis_total=(row["avg_price"] or row["current_price"] or 0) * row["quantity"] or None,
+            currency="USD",
+        )
+        db.add(position)
+        imported += 1
 
     db.commit()
     return {"imported": imported, "skipped": skipped, "errors": errors[:20]}

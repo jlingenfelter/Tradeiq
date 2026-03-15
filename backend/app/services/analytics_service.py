@@ -34,12 +34,23 @@ def compute_portfolio_analytics(db: Session, portfolio_id: str) -> dict:
     except Exception:
         quotes = {}
 
-    # Get metadata for sectors/countries
+    # Get metadata for sectors/countries — fetch from yfinance if missing
     metadata_map: dict[str, AssetMetadata] = {}
     for sym in symbols:
-        meta = db.query(AssetMetadata).filter(AssetMetadata.symbol == sym).first()
+        meta = db.query(AssetMetadata).filter(AssetMetadata.symbol == sym.upper()).first()
+        if not meta:
+            try:
+                from app.services.market_data_service import fetch_and_store_metadata
+                meta = fetch_and_store_metadata(db, sym)
+            except Exception:
+                pass
         if meta:
             metadata_map[sym] = meta
+            # Update position names if they're just the symbol
+            for pos in positions:
+                if pos.symbol == sym and pos.asset_name == sym and meta.asset_name != sym:
+                    pos.asset_name = meta.asset_name
+            db.flush()
 
     # Compute position-level data
     holdings = []
@@ -110,7 +121,10 @@ def compute_portfolio_analytics(db: Session, portfolio_id: str) -> dict:
     stress_tests = _compute_stress_tests(holdings, total_value)
 
     # Benchmark comparison
-    benchmark = get_benchmark_info("SPY")
+    try:
+        benchmark = get_benchmark_info("SPY")
+    except Exception:
+        benchmark = {"symbol": "SPY", "name": "S&P 500", "sector_weights": {}}
     benchmark_comparison = _compute_benchmark_comparison(sector_exposure, benchmark.get("sector_weights", {}))
 
     # Daily change

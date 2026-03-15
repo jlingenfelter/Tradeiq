@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.portfolio import Portfolio, Account
 from app.models.position import Position
 from app.core.exceptions import BadRequestError
+from app.services.name_resolver import resolve_stock_names
 
 
 ALPACA_LIVE_URL = "https://api.alpaca.markets"
@@ -94,6 +95,9 @@ def import_alpaca_positions(
     skipped = 0
     errors = []
 
+    symbols_to_resolve = []
+    position_rows = []
+
     for pos in positions_data:
         try:
             symbol = pos.get("symbol", "")
@@ -109,21 +113,34 @@ def import_alpaca_positions(
             avg_price = float(pos.get("avg_entry_price", 0))
             asset_class = pos.get("asset_class", "us_equity")
 
-            position = Position(
-                account_id=account.id,
-                symbol=symbol,
-                asset_name=pos.get("symbol", symbol),
-                asset_type="equity" if asset_class == "us_equity" else asset_class,
-                quantity=qty,
-                cost_basis_per_share=avg_price,
-                cost_basis_total=float(pos.get("cost_basis", 0)) or avg_price * qty,
-                currency="USD",
-            )
-            db.add(position)
-            imported += 1
+            symbols_to_resolve.append(symbol)
+            position_rows.append({
+                "symbol": symbol,
+                "qty": qty,
+                "avg_price": avg_price,
+                "cost_basis": float(pos.get("cost_basis", 0)) or avg_price * qty,
+                "asset_type": "equity" if asset_class == "us_equity" else asset_class,
+            })
         except (ValueError, KeyError) as e:
             errors.append(f"Position {pos.get('symbol', '?')}: {str(e)}")
             skipped += 1
+
+    name_map = resolve_stock_names(db, symbols_to_resolve)
+
+    for row in position_rows:
+        symbol = row["symbol"]
+        position = Position(
+            account_id=account.id,
+            symbol=symbol,
+            asset_name=name_map.get(symbol.upper(), symbol),
+            asset_type=row["asset_type"],
+            quantity=row["qty"],
+            cost_basis_per_share=row["avg_price"],
+            cost_basis_total=row["cost_basis"],
+            currency="USD",
+        )
+        db.add(position)
+        imported += 1
 
     db.commit()
     return {"imported": imported, "skipped": skipped, "errors": errors[:20]}
