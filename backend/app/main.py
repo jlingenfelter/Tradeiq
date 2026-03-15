@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.database import engine, Base
+import app.models  # noqa: F401 — register all models with Base.metadata
 from app.api.auth import router as auth_router
 from app.api.portfolios import router as portfolios_router
 from app.api.positions import router as positions_router
@@ -23,8 +24,6 @@ from app.api.wealth_dashboard import router as wealth_dashboard_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Import all models so they register with Base.metadata
-    from app.models import *  # noqa: F401, F403
     Base.metadata.create_all(bind=engine)
     yield
 
