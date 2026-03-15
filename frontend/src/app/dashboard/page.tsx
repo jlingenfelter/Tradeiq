@@ -11,15 +11,22 @@ import { SectorExposureChart } from "@/components/dashboard/SectorExposureChart"
 import { CountryExposureChart } from "@/components/dashboard/CountryExposureChart";
 import { AiSummaryPanel } from "@/components/dashboard/AiSummaryPanel";
 import { Button } from "@/components/ui/button";
-import { usePortfolios } from "@/hooks/use-portfolio";
+import { Input } from "@/components/ui/input";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { usePortfolios, useUpdatePortfolio, useDeletePortfolio } from "@/hooks/use-portfolio";
 import { useDashboard, useRecomputeAnalytics } from "@/hooks/use-analytics";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Pencil, Trash2, Plus, X, Check } from "lucide-react";
 import type { HealthScoreBreakdown } from "@/types";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { data: portfolios, isLoading: loadingPortfolios } = usePortfolios();
   const [activePortfolioId, setActivePortfolioId] = useState<string>("");
+  const [showManage, setShowManage] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const updatePortfolio = useUpdatePortfolio();
+  const deletePortfolio = useDeletePortfolio();
 
   useEffect(() => {
     if (portfolios && portfolios.length > 0 && !activePortfolioId) {
@@ -30,15 +37,42 @@ export default function DashboardPage() {
     }
   }, [portfolios, activePortfolioId, loadingPortfolios, router]);
 
+  // If active portfolio was deleted, switch to first available
+  useEffect(() => {
+    if (portfolios && portfolios.length > 0 && activePortfolioId) {
+      const exists = portfolios.some((p) => p.id === activePortfolioId);
+      if (!exists) {
+        setActivePortfolioId(portfolios[0].id);
+      }
+    }
+  }, [portfolios, activePortfolioId]);
+
   const { data: dashboard, isLoading, isError, refetch } = useDashboard(activePortfolioId);
   const recompute = useRecomputeAnalytics(activePortfolioId);
 
   function handleRefresh() {
     recompute.mutate(undefined, {
       onSuccess: () => {
-        setTimeout(() => refetch(), 3000); // Wait for Celery task
+        setTimeout(() => refetch(), 3000);
       },
     });
+  }
+
+  function handleStartEdit(id: string, name: string) {
+    setEditingId(id);
+    setEditName(name);
+  }
+
+  function handleSaveEdit(id: string) {
+    updatePortfolio.mutate({ id, name: editName }, {
+      onSuccess: () => setEditingId(null),
+    });
+  }
+
+  function handleDelete(id: string, name: string) {
+    if (confirm(`Delete "${name}"? This will remove all positions in this portfolio.`)) {
+      deletePortfolio.mutate(id);
+    }
   }
 
   if (loadingPortfolios || !activePortfolioId) {
@@ -72,12 +106,72 @@ export default function DashboardPage() {
                 ))}
               </select>
             )}
+            <Button variant="outline" size="sm" onClick={() => setShowManage(!showManage)}>
+              <Pencil className="h-4 w-4 mr-1" />
+              Manage
+            </Button>
             <Button variant="outline" size="sm" onClick={handleRefresh} disabled={recompute.isPending}>
               <RefreshCw className={`h-4 w-4 mr-1 ${recompute.isPending ? "animate-spin" : ""}`} />
               Refresh
             </Button>
           </div>
         </div>
+
+        {/* Portfolio Management Panel */}
+        {showManage && portfolios && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Manage Portfolios</CardTitle>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => router.push("/onboarding")}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    New Portfolio
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowManage(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {portfolios.map((p) => (
+                  <div key={p.id} className="flex items-center gap-2 rounded-md border px-3 py-2">
+                    {editingId === p.id ? (
+                      <>
+                        <Input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="flex-1 h-8"
+                          autoFocus
+                          onKeyDown={(e) => e.key === "Enter" && handleSaveEdit(p.id)}
+                        />
+                        <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(p.id)} disabled={updatePortfolio.isPending}>
+                          <Check className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="flex-1 text-sm font-medium">{p.name}</span>
+                        <span className="text-xs text-neutral-400">{p.id === activePortfolioId ? "Active" : ""}</span>
+                        <Button size="sm" variant="ghost" onClick={() => handleStartEdit(p.id, p.name)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleDelete(p.id, p.name)}>
+                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
