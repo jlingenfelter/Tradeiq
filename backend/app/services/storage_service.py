@@ -2,14 +2,13 @@
 
 import uuid
 
-import boto3
-from botocore.config import Config
-
 from app.config import settings
 
 
 def _get_s3_client():
     """Create an S3 client configured for Cloudflare R2."""
+    import boto3
+    from botocore.config import Config
     return boto3.client(
         "s3",
         endpoint_url=f"https://{settings.R2_ACCOUNT_ID}.r2.cloudflarestorage.com",

@@ -10,27 +10,19 @@ from app.models.plaid import PlaidItem, PlaidAccount
 from app.models.wealth import WealthContainer, Asset, Liability
 from app.models.user import User
 
-import plaid
-from plaid.api import plaid_api
-from plaid.model.link_token_create_request import LinkTokenCreateRequest
-from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
-from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
-from plaid.model.accounts_get_request import AccountsGetRequest
-from plaid.model.products import Products
-from plaid.model.country_code import CountryCode
-
-
-PLAID_ENV_MAP = {
-    "sandbox": plaid.Environment.Sandbox,
-    "development": plaid.Environment.Development,
-    "production": plaid.Environment.Production,
-}
-
-
-def _get_plaid_client() -> plaid_api.PlaidApi:
+def _get_plaid_client():
     """Build a Plaid API client from settings."""
+    import plaid
+    from plaid.api import plaid_api
+
+    env_map = {
+        "sandbox": "https://sandbox.plaid.com",
+        "development": "https://development.plaid.com",
+        "production": "https://production.plaid.com",
+    }
+    host = env_map.get(settings.PLAID_ENV, "https://sandbox.plaid.com")
     configuration = plaid.Configuration(
-        host=PLAID_ENV_MAP.get(settings.PLAID_ENV, plaid.Environment.Sandbox),
+        host=host,
         api_key={
             "clientId": settings.PLAID_CLIENT_ID,
             "secret": settings.PLAID_SECRET,
@@ -42,6 +34,11 @@ def _get_plaid_client() -> plaid_api.PlaidApi:
 
 def create_link_token(db: Session, user: User) -> str:
     """Create a Plaid Link token for the frontend."""
+    from plaid.model.link_token_create_request import LinkTokenCreateRequest
+    from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
+    from plaid.model.products import Products
+    from plaid.model.country_code import CountryCode
+
     client = _get_plaid_client()
 
     request = LinkTokenCreateRequest(
@@ -58,6 +55,8 @@ def create_link_token(db: Session, user: User) -> str:
 
 def exchange_public_token(db: Session, user: User, public_token: str, metadata: dict) -> dict:
     """Exchange a Plaid public_token for access_token and create PlaidItem."""
+    from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+
     client = _get_plaid_client()
 
     exchange_request = ItemPublicTokenExchangeRequest(public_token=public_token)
@@ -100,6 +99,8 @@ def exchange_public_token(db: Session, user: User, public_token: str, metadata: 
 
 def sync_item_accounts(db: Session, plaid_item: PlaidItem) -> list[dict]:
     """Fetch accounts from Plaid and upsert PlaidAccount records."""
+    from plaid.model.accounts_get_request import AccountsGetRequest
+
     client = _get_plaid_client()
 
     request = AccountsGetRequest(access_token=plaid_item.plaid_access_token)

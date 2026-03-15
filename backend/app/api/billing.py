@@ -4,8 +4,6 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-import stripe
-
 from app.config import settings
 from app.database import get_db
 from app.core.dependencies import get_current_user
@@ -16,8 +14,6 @@ from app.services.subscription_service import (
     get_subscription_info,
     handle_webhook_event,
 )
-
-stripe.api_key = settings.STRIPE_SECRET_KEY
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 
@@ -58,6 +54,9 @@ def create_portal(
 @router.post("/webhook")
 async def stripe_webhook(request: Request):
     """Handle Stripe webhook events. No auth required — verified by signature."""
+    import stripe
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature", "")
 

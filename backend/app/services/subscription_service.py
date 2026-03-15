@@ -2,18 +2,23 @@
 
 from datetime import datetime, timezone
 
-import stripe
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models.user import User
 from app.models.subscription import Subscription
 
-stripe.api_key = settings.STRIPE_SECRET_KEY
+
+def _init_stripe():
+    """Lazily import and configure stripe."""
+    import stripe
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    return stripe
 
 
 def get_or_create_stripe_customer(db: Session, user: User) -> str:
     """Get existing Stripe customer ID or create one."""
+    stripe = _init_stripe()
     sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
     if sub and sub.stripe_customer_id:
         return sub.stripe_customer_id
@@ -40,6 +45,7 @@ def get_or_create_stripe_customer(db: Session, user: User) -> str:
 
 def create_checkout_session(db: Session, user: User, tier: str) -> str:
     """Create a Stripe Checkout session and return the URL."""
+    stripe = _init_stripe()
     price_map = {
         "pro": settings.STRIPE_PRO_PRICE_ID,
         "family": settings.STRIPE_FAMILY_PRICE_ID,
@@ -63,6 +69,7 @@ def create_checkout_session(db: Session, user: User, tier: str) -> str:
 
 def create_billing_portal_session(db: Session, user: User) -> str:
     """Create a Stripe Customer Portal session for managing subscription."""
+    stripe = _init_stripe()
     customer_id = get_or_create_stripe_customer(db, user)
     session = stripe.billing_portal.Session.create(
         customer=customer_id,

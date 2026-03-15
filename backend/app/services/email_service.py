@@ -10,11 +10,9 @@ from app.models.user import User
 from app.models.wealth import WealthSnapshot
 from app.models.alert import AlertSubscription
 
-from klaviyo_api import KlaviyoAPI
-
-
-def _get_klaviyo() -> KlaviyoAPI:
+def _get_klaviyo():
     """Build a Klaviyo API client from settings."""
+    from klaviyo_api import KlaviyoAPI
     return KlaviyoAPI(settings.KLAVIYO_API_KEY)
 
 
