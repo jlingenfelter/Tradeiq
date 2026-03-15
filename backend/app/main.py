@@ -32,6 +32,25 @@ from app.api.crypto_wallet import router as crypto_wallet_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    # Add new columns to existing tables (create_all doesn't alter tables)
+    from sqlalchemy import text, inspect
+    with engine.connect() as conn:
+        inspector = inspect(engine)
+        existing_cols = [c["name"] for c in inspector.get_columns("accounts")]
+        migrations = {
+            "encrypted_credentials": "ALTER TABLE accounts ADD COLUMN encrypted_credentials TEXT",
+            "environment": "ALTER TABLE accounts ADD COLUMN environment VARCHAR(20)",
+            "auto_sync": "ALTER TABLE accounts ADD COLUMN auto_sync BOOLEAN DEFAULT false NOT NULL",
+            "last_synced_at": "ALTER TABLE accounts ADD COLUMN last_synced_at TIMESTAMP WITH TIME ZONE",
+            "sync_error": "ALTER TABLE accounts ADD COLUMN sync_error TEXT",
+        }
+        for col_name, sql in migrations.items():
+            if col_name not in existing_cols:
+                try:
+                    conn.execute(text(sql))
+                except Exception:
+                    pass
+        conn.commit()
     yield
 
 
