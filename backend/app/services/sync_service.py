@@ -77,6 +77,18 @@ def sync_account(db: Session, account: Account) -> dict:
                 db, portfolio,
                 account.external_account_id or ""
             )
+        elif account.source_type == "moneybox":
+            from app.services.moneybox_service import import_moneybox_positions
+            result = import_moneybox_positions(
+                db, portfolio,
+                creds.get("email", ""), creds.get("password", "")
+            )
+        elif account.source_type == "kraken":
+            from app.services.kraken_service import import_kraken_positions
+            result = import_kraken_positions(
+                db, portfolio,
+                creds.get("api_key", ""), creds.get("api_secret", "")
+            )
         else:
             return {"error": f"Unknown source type: {account.source_type}"}
 

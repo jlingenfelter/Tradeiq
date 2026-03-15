@@ -39,10 +39,10 @@ LIQUIDITY_DEFAULTS = {
 # ── Asset class to display category mapping ──
 ASSET_CLASS_CATEGORIES = {
     "cash": "Cash",
-    "stock": "Public Investments",
-    "etf": "Public Investments",
-    "mutual_fund": "Public Investments",
-    "bond": "Public Investments",
+    "stock": "Stocks & Shares",
+    "etf": "Stocks & Shares",
+    "mutual_fund": "Stocks & Shares",
+    "bond": "Stocks & Shares",
     "pension": "Pensions",
     "crypto": "Crypto",
     "property": "Property",
@@ -117,7 +117,7 @@ def _get_portfolio_asset_details(db: Session, user_id: uuid.UUID) -> list[dict]:
             else:
                 asset_class = "stock"
 
-            category = ASSET_CLASS_CATEGORIES.get(asset_class, "Public Investments")
+            category = ASSET_CLASS_CATEGORIES.get(asset_class, "Stocks & Shares")
             liq = LIQUIDITY_DEFAULTS.get(asset_class, "liquid")
 
             details.append({
@@ -175,7 +175,7 @@ def compute_wealth_snapshot(db: Session, user_id: uuid.UUID) -> dict:
         category = ASSET_CLASS_CATEGORIES.get(a.asset_class, "Other")
         if category == "Cash":
             cash_value += val
-        elif category == "Public Investments":
+        elif category == "Stocks & Shares":
             investment_value += val
         elif category == "Property":
             property_value += val
@@ -220,7 +220,7 @@ def compute_wealth_snapshot(db: Session, user_id: uuid.UUID) -> dict:
             category = pd["category"]
             if category == "Cash":
                 cash_value += val
-            elif category == "Public Investments":
+            elif category == "Stocks & Shares":
                 investment_value += val
             elif category == "Property":
                 property_value += val
@@ -283,7 +283,7 @@ def compute_wealth_snapshot(db: Session, user_id: uuid.UUID) -> dict:
     # ── Sector allocation (for public investments) ──
     sector_alloc: dict[str, float] = {}
     for ad in asset_details:
-        if ad["category"] == "Public Investments" and ad.get("sector"):
+        if ad["category"] == "Stocks & Shares" and ad.get("sector"):
             sector_alloc[ad["sector"]] = sector_alloc.get(ad["sector"], 0.0) + ad["value"]
 
     # ── Debt metrics ──
@@ -534,7 +534,7 @@ def _compute_wealth_health_score(
     # Based on investment concentration within total wealth
     inv_weight = 0
     for a in allocation:
-        if a["category"] == "Public Investments":
+        if a["category"] == "Stocks & Shares":
             inv_weight = a["weight"]
     if inv_weight <= 50:
         public_market_risk = 100

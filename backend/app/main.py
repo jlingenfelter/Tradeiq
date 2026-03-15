@@ -28,6 +28,8 @@ from app.api.ibkr import router as ibkr_router
 from app.api.ig import router as ig_router
 from app.api.tradier import router as tradier_router
 from app.api.crypto_wallet import router as crypto_wallet_router
+from app.api.moneybox import router as moneybox_router
+from app.api.kraken import router as kraken_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -97,6 +99,8 @@ app.include_router(ibkr_router)
 app.include_router(ig_router)
 app.include_router(tradier_router)
 app.include_router(crypto_wallet_router)
+app.include_router(moneybox_router)
+app.include_router(kraken_router)
 
 # Alerts
 app.include_router(alerts_router)
