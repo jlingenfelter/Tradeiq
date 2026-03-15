@@ -8,6 +8,7 @@ from app.models.position import Position
 from app.models.market_data import AssetMetadata
 from app.models.analytics import PortfolioSnapshot, AnalyticsSnapshot
 from app.services.market_data_service import fetch_quotes, get_benchmark_info
+from app.services.warning_service import generate_warnings
 
 
 def compute_portfolio_analytics(db: Session, portfolio_id: str) -> dict:
@@ -152,6 +153,9 @@ def compute_portfolio_analytics(db: Session, portfolio_id: str) -> dict:
     db.add(analytics_snapshot)
     db.commit()
     db.refresh(analytics_snapshot)
+
+    # Generate warnings based on the analytics snapshot
+    generated_warnings = generate_warnings(db, portfolio_id, str(analytics_snapshot.id))
 
     return {
         "analytics_snapshot_id": str(analytics_snapshot.id),
