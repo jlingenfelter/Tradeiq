@@ -51,10 +51,18 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
-      <Card className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 px-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-4">
+            <span className="text-white text-lg font-bold">W</span>
+          </div>
+          <h1 className="text-2xl font-bold text-white">Wealth Copilot</h1>
+          <p className="text-slate-400 text-sm mt-1">AI-powered portfolio monitoring</p>
+        </div>
+      <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Create Account</CardTitle>
+          <CardTitle className="text-xl">Create Account</CardTitle>
           <CardDescription>Start tracking your wealth today</CardDescription>
         </CardHeader>
         <CardContent>
@@ -107,18 +115,19 @@ export default function SignupPage() {
                 ))}
               </select>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700" disabled={loading}>
               {loading ? "Creating account..." : "Create account"}
             </Button>
-            <p className="text-center text-sm text-neutral-500">
+            <p className="text-center text-sm text-slate-500">
               Already have an account?{" "}
-              <Link href="/login" className="text-neutral-900 underline">
+              <Link href="/login" className="text-indigo-600 font-medium hover:text-indigo-500">
                 Sign in
               </Link>
             </p>
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

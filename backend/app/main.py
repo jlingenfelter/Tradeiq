@@ -22,6 +22,11 @@ from app.api.assets import router as assets_router
 from app.api.liabilities import router as liabilities_router
 from app.api.wealth_dashboard import router as wealth_dashboard_router
 from app.api.trading212 import router as trading212_router
+from app.api.alpaca import router as alpaca_router
+from app.api.ibkr import router as ibkr_router
+from app.api.ig import router as ig_router
+from app.api.tradier import router as tradier_router
+from app.api.crypto_wallet import router as crypto_wallet_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -66,6 +71,11 @@ app.include_router(chat_router)
 
 # Broker integrations
 app.include_router(trading212_router)
+app.include_router(alpaca_router)
+app.include_router(ibkr_router)
+app.include_router(ig_router)
+app.include_router(tradier_router)
+app.include_router(crypto_wallet_router)
 
 # Alerts
 app.include_router(alerts_router)

@@ -27,11 +27,16 @@ export function Sidebar() {
   const { logout } = useAuth();
 
   return (
-    <aside className="flex h-screen w-60 flex-col border-r border-neutral-200 bg-white">
-      <div className="flex h-14 items-center border-b border-neutral-200 px-4">
-        <h1 className="text-lg font-semibold tracking-tight">Wealth Copilot</h1>
+    <aside className="flex h-screen w-60 flex-col bg-slate-900">
+      <div className="flex h-14 items-center px-5">
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">W</span>
+          </div>
+          <h1 className="text-base font-semibold tracking-tight text-white">Wealth Copilot</h1>
+        </div>
       </div>
-      <nav className="flex-1 space-y-1 p-3">
+      <nav className="flex-1 space-y-0.5 px-3 pt-4">
         {navigation.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -39,22 +44,25 @@ export function Sidebar() {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
                 isActive
-                  ? "bg-neutral-100 text-neutral-900"
-                  : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
+                  ? "bg-indigo-600/20 text-indigo-400"
+                  : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
               )}
             >
-              <item.icon className="h-4 w-4" />
+              <item.icon className={cn("h-4 w-4", isActive && "text-indigo-400")} />
               {item.name}
+              {isActive && (
+                <div className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-400" />
+              )}
             </Link>
           );
         })}
       </nav>
-      <div className="border-t border-neutral-200 p-3">
+      <div className="border-t border-slate-800 px-3 py-3">
         <button
           onClick={logout}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200"
         >
           <LogOut className="h-4 w-4" />
           Sign out

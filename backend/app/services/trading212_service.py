@@ -72,14 +72,14 @@ def import_t212_positions(
     # Create or find the Trading 212 account
     account = db.query(Account).filter(
         Account.portfolio_id == portfolio.id,
-        Account.source == "trading212",
+        Account.source_type == "trading212",
     ).first()
 
     if not account:
         account = Account(
             portfolio_id=portfolio.id,
             name="Trading 212",
-            source="trading212",
+            source_type="trading212",
         )
         db.add(account)
         db.flush()

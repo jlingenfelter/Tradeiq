@@ -25,6 +25,7 @@ export default function DashboardPage() {
   const [showManage, setShowManage] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [editCurrency, setEditCurrency] = useState("");
   const updatePortfolio = useUpdatePortfolio();
   const deletePortfolio = useDeletePortfolio();
 
@@ -58,13 +59,14 @@ export default function DashboardPage() {
     });
   }
 
-  function handleStartEdit(id: string, name: string) {
+  function handleStartEdit(id: string, name: string, currency: string) {
     setEditingId(id);
     setEditName(name);
+    setEditCurrency(currency || "USD");
   }
 
   function handleSaveEdit(id: string) {
-    updatePortfolio.mutate({ id, name: editName }, {
+    updatePortfolio.mutate({ id, name: editName, base_currency: editCurrency }, {
       onSuccess: () => setEditingId(null),
     });
   }
@@ -91,8 +93,8 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold">{dashboard?.portfolio_name || "Dashboard"}</h2>
-            <p className="text-sm text-neutral-500">Portfolio overview and key metrics</p>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900">{dashboard?.portfolio_name || "Dashboard"}</h2>
+            <p className="text-sm text-slate-500">Portfolio overview and key metrics</p>
           </div>
           <div className="flex items-center gap-2">
             {portfolios && portfolios.length > 1 && (
@@ -147,6 +149,25 @@ export default function DashboardPage() {
                           autoFocus
                           onKeyDown={(e) => e.key === "Enter" && handleSaveEdit(p.id)}
                         />
+                        <select
+                          value={editCurrency}
+                          onChange={(e) => setEditCurrency(e.target.value)}
+                          className="h-8 rounded-md border border-neutral-200 px-2 text-xs"
+                        >
+                          <option value="USD">USD</option>
+                          <option value="EUR">EUR</option>
+                          <option value="GBP">GBP</option>
+                          <option value="JPY">JPY</option>
+                          <option value="CHF">CHF</option>
+                          <option value="CAD">CAD</option>
+                          <option value="AUD">AUD</option>
+                          <option value="NZD">NZD</option>
+                          <option value="SEK">SEK</option>
+                          <option value="NOK">NOK</option>
+                          <option value="DKK">DKK</option>
+                          <option value="SGD">SGD</option>
+                          <option value="HKD">HKD</option>
+                        </select>
                         <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(p.id)} disabled={updatePortfolio.isPending}>
                           <Check className="h-4 w-4 text-green-600" />
                         </Button>
@@ -157,8 +178,9 @@ export default function DashboardPage() {
                     ) : (
                       <>
                         <span className="flex-1 text-sm font-medium">{p.name}</span>
+                        <span className="text-xs text-neutral-400">{p.base_currency || "USD"}</span>
                         <span className="text-xs text-neutral-400">{p.id === activePortfolioId ? "Active" : ""}</span>
-                        <Button size="sm" variant="ghost" onClick={() => handleStartEdit(p.id, p.name)}>
+                        <Button size="sm" variant="ghost" onClick={() => handleStartEdit(p.id, p.name, p.base_currency)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => handleDelete(p.id, p.name)}>
