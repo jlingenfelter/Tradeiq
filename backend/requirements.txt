@@ -10,6 +10,7 @@ passlib[bcrypt]==1.7.4
 httpx==0.28.1
 anthropic==0.43.0
 python-multipart==0.0.20
+email-validator==2.2.0
 redis==5.2.1
 celery[redis]==5.4.0
 yfinance==0.2.51
