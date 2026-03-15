@@ -1,35 +1,66 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { api } from "@/lib/api";
 
 interface Props {
   summary: string | null;
   portfolioId: string;
 }
 
-export function AiSummaryPanel({ summary, portfolioId }: Props) {
+export function AiSummaryPanel({ summary: initialSummary, portfolioId }: Props) {
+  const [summary, setSummary] = useState(initialSummary);
+  const [loading, setLoading] = useState(false);
+
+  async function handleGenerate() {
+    setLoading(true);
+    try {
+      const res = await api.post<{ summary: string }>(`/portfolios/${portfolioId}/ai-summary`);
+      setSummary(res.summary);
+    } catch {
+      setSummary("Unable to generate summary at this time.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">AI Summary</CardTitle>
-          <Link
-            href="/chat"
-            className="flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-900 transition-colors"
-          >
-            <MessageSquare className="h-3 w-3" />
-            Ask AI
-          </Link>
+          <div className="flex items-center gap-2">
+            {!summary && (
+              <Button variant="outline" size="sm" onClick={handleGenerate} disabled={loading}>
+                <Sparkles className="h-3 w-3 mr-1" />
+                {loading ? "Generating..." : "Generate"}
+              </Button>
+            )}
+            <Link
+              href="/chat"
+              className="flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-900 transition-colors"
+            >
+              <MessageSquare className="h-3 w-3" />
+              Ask AI
+            </Link>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
         {summary ? (
-          <p className="text-sm text-neutral-700 leading-relaxed">{summary}</p>
+          <div className="space-y-2">
+            <p className="text-sm text-neutral-700 leading-relaxed">{summary}</p>
+            <Button variant="ghost" size="sm" onClick={handleGenerate} disabled={loading} className="text-xs">
+              {loading ? "Regenerating..." : "Regenerate"}
+            </Button>
+          </div>
         ) : (
           <p className="text-sm text-neutral-400 italic">
-            AI summary will appear once analytics are computed.
+            Click Generate to get an AI-powered summary of your portfolio.
           </p>
         )}
       </CardContent>

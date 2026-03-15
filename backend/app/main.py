@@ -9,6 +9,7 @@ from app.api.ingestion import router as ingestion_router
 from app.api.analytics import router as analytics_router
 from app.api.warnings import router as warnings_router
 from app.api.dashboard import router as dashboard_router
+from app.api.chat import router as chat_router
 
 app = FastAPI(
     title="Portfolio Copilot",
@@ -31,6 +32,7 @@ app.include_router(ingestion_router)
 app.include_router(analytics_router)
 app.include_router(warnings_router)
 app.include_router(dashboard_router)
+app.include_router(chat_router)
 
 
 @app.get("/health")
