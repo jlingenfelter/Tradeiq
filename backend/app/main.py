@@ -21,6 +21,7 @@ from app.api.containers import router as containers_router
 from app.api.assets import router as assets_router
 from app.api.liabilities import router as liabilities_router
 from app.api.wealth_dashboard import router as wealth_dashboard_router
+from app.api.connections import router as connections_router
 from app.api.trading212 import router as trading212_router
 from app.api.alpaca import router as alpaca_router
 from app.api.ibkr import router as ibkr_router
@@ -69,7 +70,8 @@ app.include_router(dashboard_router)
 # AI & chat
 app.include_router(chat_router)
 
-# Broker integrations
+# Broker integrations & connections
+app.include_router(connections_router)
 app.include_router(trading212_router)
 app.include_router(alpaca_router)
 app.include_router(ibkr_router)

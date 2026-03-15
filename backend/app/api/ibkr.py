@@ -12,7 +12,9 @@ from app.services.ibkr_service import (
     fetch_ibkr_accounts,
     import_ibkr_positions,
 )
+from app.models.portfolio import Account
 from app.services.analytics_service import compute_portfolio_analytics
+from app.services.sync_service import save_credentials
 
 router = APIRouter(prefix="/ibkr", tags=["ibkr"])
 
@@ -65,6 +67,9 @@ def sync_positions(
     """Sync positions from IBKR into a portfolio."""
     portfolio = get_portfolio(db, uuid.UUID(body.portfolio_id), current_user)
     result = import_ibkr_positions(db, portfolio, body.ibkr_account_id, body.gateway_url)
+    account = db.query(Account).filter(Account.portfolio_id == portfolio.id, Account.source_type == "ibkr").first()
+    if account:
+        save_credentials(account, {"gateway_url": body.gateway_url}, "live", db)
     if result["imported"] > 0:
         try:
             compute_portfolio_analytics(db, body.portfolio_id)

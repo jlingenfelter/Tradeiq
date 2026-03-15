@@ -13,7 +13,9 @@ from app.services.crypto_wallet_service import (
     fetch_wallet_holdings,
     import_wallet_positions,
 )
+from app.models.portfolio import Account
 from app.services.analytics_service import compute_portfolio_analytics
+from app.services.sync_service import save_credentials
 
 router = APIRouter(prefix="/crypto-wallet", tags=["crypto-wallet"])
 
@@ -69,6 +71,14 @@ def sync_wallet(
     """Import crypto holdings from a wallet into a portfolio."""
     portfolio = get_portfolio(db, uuid.UUID(body.portfolio_id), current_user)
     result = import_wallet_positions(db, portfolio, body.address)
+    # Crypto wallets don't need credentials — the address is public. Enable auto-sync.
+    account = db.query(Account).filter(
+        Account.portfolio_id == portfolio.id,
+        Account.source_type == "crypto_wallet",
+        Account.external_account_id == body.address.lower(),
+    ).first()
+    if account:
+        save_credentials(account, {"address": body.address}, "live", db)
     if result["imported"] > 0:
         try:
             compute_portfolio_analytics(db, body.portfolio_id)

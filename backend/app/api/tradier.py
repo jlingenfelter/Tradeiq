@@ -12,7 +12,9 @@ from app.services.tradier_service import (
     fetch_tradier_profile,
     import_tradier_positions,
 )
+from app.models.portfolio import Account
 from app.services.analytics_service import compute_portfolio_analytics
+from app.services.sync_service import save_credentials
 
 router = APIRouter(prefix="/tradier", tags=["tradier"])
 
@@ -75,6 +77,9 @@ def sync_positions(
     result = import_tradier_positions(
         db, portfolio, body.access_token, body.tradier_account_id, body.environment
     )
+    account = db.query(Account).filter(Account.portfolio_id == portfolio.id, Account.source_type == "tradier").first()
+    if account:
+        save_credentials(account, {"access_token": body.access_token}, body.environment, db)
     if result["imported"] > 0:
         try:
             compute_portfolio_analytics(db, body.portfolio_id)

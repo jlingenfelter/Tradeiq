@@ -55,6 +55,26 @@ export function useAnalyticsLatest(portfolioId: string) {
   });
 }
 
+export interface ConnectionInfo {
+  id: string;
+  portfolio_id: string;
+  name: string;
+  source_type: string;
+  environment: string | null;
+  auto_sync: boolean;
+  last_synced_at: string | null;
+  sync_error: string | null;
+  position_count: number;
+}
+
+export function useConnections(portfolioId: string) {
+  return useQuery<ConnectionInfo[]>({
+    queryKey: ["connections", portfolioId],
+    queryFn: () => api.get(`/portfolios/${portfolioId}/connections`),
+    enabled: !!portfolioId,
+  });
+}
+
 export function useRecomputeAnalytics(portfolioId: string) {
   const queryClient = useQueryClient();
   return useMutation({

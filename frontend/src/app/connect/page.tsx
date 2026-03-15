@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePortfolios } from "@/hooks/use-portfolio";
+import { useConnections } from "@/hooks/use-analytics";
 import { api } from "@/lib/api";
-import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Loader2, RefreshCw, Trash2, Wifi } from "lucide-react";
 
 type Broker = "trading212" | "alpaca" | "ibkr" | "ig" | "tradier" | "crypto" | null;
 
@@ -45,6 +46,7 @@ export default function ConnectPage() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
 
   // Broker fields
   const [apiKey, setApiKey] = useState("");
@@ -61,6 +63,33 @@ export default function ConnectPage() {
   // Set first portfolio as default
   if (portfolios && portfolios.length > 0 && !selectedPortfolioId) {
     setSelectedPortfolioId(portfolios[0].id);
+  }
+
+  const { data: connections, refetch: refetchConnections } = useConnections(selectedPortfolioId);
+
+  async function handleResync(connectionId: string) {
+    setSyncingId(connectionId);
+    try {
+      await api.post(`/connections/${connectionId}/sync`);
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["connections"] });
+      refetchConnections();
+    } catch (err) {
+      console.error("Sync failed:", err);
+    } finally {
+      setSyncingId(null);
+    }
+  }
+
+  async function handleDisconnect(connectionId: string, name: string) {
+    if (!confirm(`Disconnect "${name}"? This will stop auto-syncing but keep existing positions.`)) return;
+    try {
+      await api.delete(`/connections/${connectionId}`);
+      refetchConnections();
+    } catch (err) {
+      console.error("Disconnect failed:", err);
+    }
   }
 
   function resetFields() {
@@ -124,10 +153,11 @@ export default function ConnectPage() {
         setStatus(`Error: ${errMsg}`);
       } else {
         setStatus(`Imported ${result.imported} positions${extra}`);
-        // Invalidate dashboard/analytics cache so fresh data loads
+        // Invalidate caches so fresh data loads
         queryClient.invalidateQueries({ queryKey: ["dashboard"] });
         queryClient.invalidateQueries({ queryKey: ["analytics"] });
         queryClient.invalidateQueries({ queryKey: ["positions"] });
+        queryClient.invalidateQueries({ queryKey: ["connections"] });
       }
     } catch (err: unknown) {
       setStatus(err instanceof Error ? err.message : "Sync failed");
@@ -199,10 +229,85 @@ export default function ConnectPage() {
           <p className="text-sm text-slate-500 mt-1">Link your broker accounts and crypto wallets to import positions automatically</p>
         </div>
 
+        {/* Saved Connections */}
+        {!selectedBroker && connections && connections.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Active Connections</CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    setSyncingId("all");
+                    try {
+                      await api.post(`/portfolios/${selectedPortfolioId}/connections/sync-all`);
+                      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+                      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+                      refetchConnections();
+                    } finally {
+                      setSyncingId(null);
+                    }
+                  }}
+                  disabled={syncingId !== null}
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 mr-1 ${syncingId === "all" ? "animate-spin" : ""}`} />
+                  Sync All
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {portfolios && portfolios.length > 1 && (
+                  <select
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm mb-3"
+                    value={selectedPortfolioId}
+                    onChange={(e) => setSelectedPortfolioId(e.target.value)}
+                  >
+                    {portfolios.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name} ({p.base_currency})</option>
+                    ))}
+                  </select>
+                )}
+                {connections.map((conn) => (
+                  <div key={conn.id} className="flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3">
+                    <Wifi className={`h-4 w-4 ${conn.sync_error ? "text-red-500" : "text-emerald-500"}`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-slate-900">{conn.name}</div>
+                      <div className="text-xs text-slate-500">
+                        {conn.position_count} positions
+                        {conn.last_synced_at && ` · Last synced ${new Date(conn.last_synced_at).toLocaleString()}`}
+                      </div>
+                      {conn.sync_error && (
+                        <div className="text-xs text-red-600 mt-0.5 truncate">{conn.sync_error}</div>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleResync(conn.id)}
+                      disabled={syncingId !== null}
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${syncingId === conn.id ? "animate-spin" : ""}`} />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDisconnect(conn.id, conn.name)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {!selectedBroker && (
           <div className="space-y-4">
             <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Broker Integrations</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Add New Connection</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {BROKERS.filter(b => b.category === "broker").map((broker) => (
                   <Card key={broker.id} className="cursor-pointer hover:border-indigo-300 hover:shadow-md" onClick={() => setSelectedBroker(broker.id)}>
