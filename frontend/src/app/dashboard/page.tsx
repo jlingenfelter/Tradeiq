@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { usePortfolios, useUpdatePortfolio, useDeletePortfolio } from "@/hooks/use-portfolio";
 import { useDashboard, useRecomputeAnalytics } from "@/hooks/use-analytics";
-import { RefreshCw, Pencil, Trash2, Plus, X, Check } from "lucide-react";
+import { RefreshCw, Pencil, Trash2, Plus, X, Check, Link2 } from "lucide-react";
 import type { HealthScoreBreakdown } from "@/types";
 
 export default function DashboardPage() {
@@ -108,6 +108,10 @@ export default function DashboardPage() {
                 ))}
               </select>
             )}
+            <Button variant="outline" size="sm" onClick={() => router.push("/connect")}>
+              <Link2 className="h-4 w-4 mr-1" />
+              Connect
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setShowManage(!showManage)}>
               <Pencil className="h-4 w-4 mr-1" />
               Manage

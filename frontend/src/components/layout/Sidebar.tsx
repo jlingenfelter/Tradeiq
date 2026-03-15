@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Wallet, CreditCard, PieChart,
   TrendingUp, AlertTriangle, MessageSquare, Settings,
-  LogOut, Briefcase,
+  LogOut, Briefcase, Link2,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
@@ -18,6 +18,7 @@ const navigation = [
   { name: "Allocation & Risk", href: "/allocation", icon: PieChart },
   { name: "History", href: "/history", icon: TrendingUp },
   { name: "Warnings", href: "/warnings", icon: AlertTriangle },
+  { name: "Connect", href: "/connect", icon: Link2 },
   { name: "Ask AI", href: "/chat", icon: MessageSquare },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
