@@ -7,11 +7,13 @@ import {
   LayoutDashboard, Wallet, CreditCard, PieChart,
   TrendingUp, AlertTriangle, MessageSquare, Settings,
   LogOut, Briefcase, Link2, Target, Bell, Sparkles,
-  Calculator, FileText, Users, Crown,
+  Calculator, FileText, Users, Crown, Menu, X,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { TierBadge } from "@/components/subscription/TierBadge";
 import { useSubscription } from "@/hooks/use-subscription";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useState, useEffect, useCallback } from "react";
 
 const navigation = [
   { name: "Overview", href: "/overview", icon: LayoutDashboard },
@@ -38,73 +40,195 @@ export function Sidebar() {
   const { data: subscription } = useSubscription();
   const tier = subscription?.tier || "free";
 
-  return (
-    <aside className="flex h-screen w-60 flex-col bg-slate-900">
-      <div className="flex h-14 items-center px-5">
-        <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-            <span className="text-white text-xs font-bold">W</span>
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [tabletExpanded, setTabletExpanded] = useState(false);
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  const closeMobile = useCallback(() => setMobileOpen(false), []);
+
+  const sidebarContent = (opts: { collapsed?: boolean; onNavClick?: () => void }) => {
+    const { collapsed = false, onNavClick } = opts;
+    return (
+      <>
+        {/* Logo header */}
+        <div className="flex h-14 items-center px-5 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
+              <span className="text-white text-xs font-bold">T</span>
+            </div>
+            {!collapsed && (
+              <>
+                <h1 className="text-base font-semibold tracking-tight text-white whitespace-nowrap">TradeIQ</h1>
+                <TierBadge />
+              </>
+            )}
           </div>
-          <h1 className="text-base font-semibold tracking-tight text-white">Wealth Copilot</h1>
-          <TierBadge />
-        </div>
-      </div>
-      <nav className="flex-1 space-y-0.5 px-3 pt-4 overflow-y-auto">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href;
-          const isPro = "pro" in item && item.pro;
-          const isFamily = "family" in item && item.family;
-          const locked = (isPro && tier === "free") || (isFamily && tier !== "family");
-
-          return (
-            <Link
-              key={item.name}
-              href={locked ? "/pricing" : item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
-                isActive
-                  ? "bg-indigo-600/20 text-indigo-400"
-                  : locked
-                    ? "text-slate-600 hover:bg-slate-800/50 hover:text-slate-500"
-                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-              )}
+          {/* Close button on mobile */}
+          {onNavClick && (
+            <button
+              onClick={onNavClick}
+              className="ml-auto p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 md:hidden"
+              aria-label="Close sidebar"
             >
-              <item.icon className={cn("h-4 w-4", isActive && "text-indigo-400")} />
-              {item.name}
-              {locked && (
-                <span className="ml-auto text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-500">
-                  {isFamily ? "Family" : "Pro"}
-                </span>
-              )}
-              {isActive && !locked && (
-                <div className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-400" />
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {tier === "free" && (
-        <div className="px-3 py-2">
-          <Link
-            href="/pricing"
-            className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium bg-gradient-to-r from-indigo-600/20 to-purple-600/20 text-indigo-400 hover:from-indigo-600/30 hover:to-purple-600/30 transition-colors"
-          >
-            <Crown className="h-4 w-4" />
-            Upgrade Plan
-          </Link>
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
-      )}
 
-      <div className="border-t border-slate-800 px-3 py-3">
+        {/* Navigation */}
+        <nav className="flex-1 space-y-0.5 px-3 pt-4 overflow-y-auto">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href;
+            const isPro = "pro" in item && item.pro;
+            const isFamily = "family" in item && item.family;
+            const locked = (isPro && tier === "free") || (isFamily && tier !== "family");
+
+            return (
+              <Link
+                key={item.name}
+                href={locked ? "/pricing" : item.href}
+                onClick={onNavClick}
+                title={collapsed ? item.name : undefined}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
+                  collapsed && "justify-center px-2",
+                  isActive
+                    ? "bg-indigo-600/20 text-indigo-400"
+                    : locked
+                      ? "text-slate-600 hover:bg-slate-800/50 hover:text-slate-500"
+                      : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                )}
+              >
+                <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-indigo-400")} />
+                {!collapsed && (
+                  <>
+                    {item.name}
+                    {locked && (
+                      <span className="ml-auto text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-500">
+                        {isFamily ? "Family" : "Pro"}
+                      </span>
+                    )}
+                    {isActive && !locked && (
+                      <div className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                    )}
+                  </>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Upgrade CTA */}
+        {tier === "free" && !collapsed && (
+          <div className="px-3 py-2 shrink-0">
+            <Link
+              href="/pricing"
+              onClick={onNavClick}
+              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium bg-gradient-to-r from-indigo-600/20 to-purple-600/20 text-indigo-400 hover:from-indigo-600/30 hover:to-purple-600/30 transition-colors"
+            >
+              <Crown className="h-4 w-4" />
+              Upgrade Plan
+            </Link>
+          </div>
+        )}
+
+        {/* Theme toggle */}
+        {!collapsed && (
+          <div className="px-3 shrink-0">
+            <ThemeToggle />
+          </div>
+        )}
+
+        {/* Sign out */}
+        <div className="border-t border-slate-800 px-3 py-3 shrink-0">
+          <button
+            onClick={() => {
+              onNavClick?.();
+              logout();
+            }}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200",
+              collapsed && "justify-center px-2"
+            )}
+            title={collapsed ? "Sign out" : undefined}
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            {!collapsed && "Sign out"}
+          </button>
+        </div>
+      </>
+    );
+  };
+
+  return (
+    <>
+      {/* ==================== Mobile header bar ==================== */}
+      <div className="fixed top-0 left-0 right-0 z-40 flex h-14 items-center justify-between bg-slate-900 px-4 md:hidden">
         <button
-          onClick={logout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+          onClick={() => setMobileOpen(true)}
+          className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+          aria-label="Open menu"
         >
-          <LogOut className="h-4 w-4" />
-          Sign out
+          <Menu className="h-5 w-5" />
         </button>
+        <span className="text-base font-semibold text-white">TradeIQ</span>
+        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+          <span className="text-white text-xs font-bold">U</span>
+        </div>
       </div>
-    </aside>
+
+      {/* ==================== Mobile sidebar overlay ==================== */}
+      {/* Backdrop */}
+      <div
+        className={cn(
+          "fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 md:hidden",
+          mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+        onClick={closeMobile}
+        aria-hidden="true"
+      />
+      {/* Sliding sidebar */}
+      <aside
+        className={cn(
+          "fixed top-0 left-0 z-50 flex h-screen w-72 flex-col bg-slate-900 transition-transform duration-300 ease-in-out md:hidden",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {sidebarContent({ onNavClick: closeMobile })}
+      </aside>
+
+      {/* ==================== Tablet sidebar (768-1024) ==================== */}
+      <aside
+        className={cn(
+          "hidden md:flex lg:hidden h-screen flex-col bg-slate-900 transition-all duration-200 ease-in-out shrink-0",
+          tabletExpanded ? "w-60" : "w-16"
+        )}
+        onMouseEnter={() => setTabletExpanded(true)}
+        onMouseLeave={() => setTabletExpanded(false)}
+      >
+        {sidebarContent({ collapsed: !tabletExpanded })}
+      </aside>
+
+      {/* ==================== Desktop sidebar (> 1024) ==================== */}
+      <aside className="hidden lg:flex h-screen w-60 flex-col bg-slate-900 shrink-0">
+        {sidebarContent({})}
+      </aside>
+    </>
   );
 }

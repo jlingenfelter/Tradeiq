@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { HoldingsTable } from "@/components/holdings/HoldingsTable";
+import { EmptyState } from "@/components/ui/empty-state";
 import { usePortfolios } from "@/hooks/use-portfolio";
 import { useAnalyticsLatest } from "@/hooks/use-analytics";
+import { HoldingsSkeleton } from "@/components/ui/skeleton-page";
+import { BarChart3 } from "lucide-react";
 
 export default function HoldingsPage() {
   const router = useRouter();
@@ -29,11 +32,16 @@ export default function HoldingsPage() {
         </div>
 
         {isLoading ? (
-          <div className="text-neutral-500">Loading holdings...</div>
+          <HoldingsSkeleton />
         ) : analytics?.holdings ? (
           <HoldingsTable holdings={analytics.holdings} />
         ) : (
-          <div className="text-neutral-500">No holdings data. Add positions or refresh analytics.</div>
+          <EmptyState
+            icon={BarChart3}
+            title="No holdings yet"
+            description="Connect a broker or add positions manually to see your holdings here."
+            action={{ label: "Connect", href: "/connect" }}
+          />
         )}
       </div>
     </AppShell>

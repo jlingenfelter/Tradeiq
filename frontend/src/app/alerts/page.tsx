@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useSmartAlerts } from "@/hooks/use-insights";
 import { Bell } from "lucide-react";
 
@@ -45,11 +46,11 @@ export default function AlertsPage() {
             ))}
           </div>
         ) : alerts.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center text-neutral-500">
-              No alerts right now. Keep tracking your wealth and we'll notify you of milestones, big changes, and things to review.
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={Bell}
+            title="All clear!"
+            description="No alerts at the moment. We'll notify you when something needs attention."
+          />
         ) : (
           <div className="space-y-3">
             {alerts.map((alert, i) => {

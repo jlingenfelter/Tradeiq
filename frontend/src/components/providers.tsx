@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthContext, User, getStoredToken, setStoredToken, removeStoredToken } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { initNativePlugins } from "@/lib/capacitor";
+import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,10 +60,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!user }}>
-        {children}
-      </AuthContext.Provider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!user }}>
+          {children}
+          <Toaster />
+        </AuthContext.Provider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

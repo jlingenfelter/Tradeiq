@@ -17,6 +17,7 @@ import { usePortfolios, useUpdatePortfolio, useDeletePortfolio } from "@/hooks/u
 import { useDashboard, useRecomputeAnalytics } from "@/hooks/use-analytics";
 import { RefreshCw, Pencil, Trash2, Plus, X, Check, Link2 } from "lucide-react";
 import type { HealthScoreBreakdown } from "@/types";
+import { DashboardSkeleton } from "@/components/ui/skeleton-page";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -80,9 +81,7 @@ export default function DashboardPage() {
   if (loadingPortfolios || !activePortfolioId) {
     return (
       <AppShell>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-neutral-500">Loading portfolios...</div>
-        </div>
+        <DashboardSkeleton />
       </AppShell>
     );
   }
@@ -200,9 +199,7 @@ export default function DashboardPage() {
         )}
 
         {isLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-neutral-500">Computing analytics...</div>
-          </div>
+          <DashboardSkeleton />
         ) : isError ? (
           <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
             Failed to load dashboard data. Try refreshing.

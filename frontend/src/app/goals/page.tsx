@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useGoals, useCreateGoal, useDeleteGoal } from "@/hooks/use-goals";
 import { formatCurrency } from "@/lib/utils";
 import { Plus, Trash2, TrendingUp, Calendar, Target } from "lucide-react";
@@ -290,19 +291,12 @@ export default function GoalsPage() {
 
         {/* Empty state */}
         {goals && goals.length === 0 && !showForm && (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <div className="text-4xl mb-3">🎯</div>
-              <h3 className="text-lg font-semibold">No goals yet</h3>
-              <p className="text-sm text-neutral-500 mt-1">
-                Set your first net worth target and watch your progress
-              </p>
-              <Button onClick={() => setShowForm(true)} className="mt-4" size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Create your first goal
-              </Button>
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={Target}
+            title="Set your first goal"
+            description="Track your progress towards financial milestones"
+            action={{ label: "Create your first goal", onClick: () => setShowForm(true) }}
+          />
         )}
       </div>
     </AppShell>

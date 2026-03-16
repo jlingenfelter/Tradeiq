@@ -15,6 +15,7 @@ import { GoalProgressCard } from "@/components/wealth/GoalProgressCard";
 import { NetWorthChart } from "@/components/wealth/NetWorthChart";
 import { InsightsCard } from "@/components/wealth/InsightsCard";
 import { SmartAlertsCard } from "@/components/wealth/SmartAlertsCard";
+import { WealthSkeleton } from "@/components/ui/skeleton-page";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
@@ -24,7 +25,7 @@ export default function OverviewPage() {
   if (isLoading) {
     return (
       <AppShell>
-        <div className="text-neutral-500">Loading wealth overview...</div>
+        <WealthSkeleton />
       </AppShell>
     );
   }

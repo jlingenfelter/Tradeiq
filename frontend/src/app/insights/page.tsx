@@ -2,8 +2,9 @@
 
 import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useInsights } from "@/hooks/use-insights";
-import { Sparkles } from "lucide-react";
+import { Lightbulb, Sparkles } from "lucide-react";
 
 const CATEGORY_COLORS: Record<string, string> = {
   milestone: "bg-amber-50 border-amber-200",
@@ -46,11 +47,11 @@ export default function InsightsPage() {
             ))}
           </div>
         ) : insights.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center text-neutral-500">
-              Add more assets and liabilities to unlock AI-powered insights about your wealth.
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={Lightbulb}
+            title="Insights coming soon"
+            description="Once you have portfolio data, we'll generate personalized insights"
+          />
         ) : (
           <div className="space-y-3">
             {insights.map((insight, i) => (
