@@ -206,28 +206,26 @@ export default function DashboardPage() {
           </div>
         ) : dashboard ? (
           <>
-            {/* Top row: Value + Health Score */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <PortfolioValueCard
-                totalValue={dashboard.total_value}
-                dailyChange={dashboard.daily_change}
-                dailyChangePct={dashboard.daily_change_pct}
-                currency={dashboard.base_currency}
-              />
+            {/* Hero: Portfolio Value – full width */}
+            <PortfolioValueCard
+              totalValue={dashboard.total_value}
+              dailyChange={dashboard.daily_change}
+              dailyChangePct={dashboard.daily_change_pct}
+              currency={dashboard.base_currency}
+            />
+
+            {/* Secondary row: Health + Risks + Holdings */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <HealthScoreCard
                 score={dashboard.health_score}
                 breakdown={dashboard.health_score_breakdown as HealthScoreBreakdown}
               />
-            </div>
-
-            {/* Risks + Holdings */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <TopRisksCard risks={dashboard.top_risks} />
               <TopHoldingsCard holdings={dashboard.top_holdings} />
             </div>
 
             {/* Charts */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <SectorExposureChart data={dashboard.sector_exposure} />
               <CountryExposureChart data={dashboard.country_exposure} />
             </div>

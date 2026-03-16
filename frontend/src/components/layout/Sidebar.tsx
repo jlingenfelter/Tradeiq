@@ -67,10 +67,10 @@ export function Sidebar() {
     return (
       <>
         {/* Logo header */}
-        <div className="flex h-14 items-center px-5 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
-              <span className="text-white text-xs font-bold">T</span>
+        <div className="flex h-16 items-center px-5 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="logo-shine h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 overflow-hidden">
+              <span className="text-white text-sm font-bold">T</span>
             </div>
             {!collapsed && (
               <>
@@ -91,8 +91,11 @@ export function Sidebar() {
           )}
         </div>
 
+        {/* Gradient separator */}
+        <div className="mx-4 h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent shrink-0" />
+
         {/* Navigation */}
-        <nav className="flex-1 space-y-0.5 px-3 pt-4 overflow-y-auto">
+        <nav className="flex-1 space-y-0.5 px-3 pt-3 overflow-y-auto">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             const isPro = "pro" in item && item.pro;
@@ -106,10 +109,10 @@ export function Sidebar() {
                 onClick={onNavClick}
                 title={collapsed ? item.name : undefined}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium relative",
                   collapsed && "justify-center px-2",
                   isActive
-                    ? "bg-indigo-600/20 text-indigo-400"
+                    ? "bg-indigo-600/20 text-indigo-400 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[2px] before:rounded-r before:bg-indigo-400"
                     : locked
                       ? "text-slate-600 hover:bg-slate-800/50 hover:text-slate-500"
                       : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"

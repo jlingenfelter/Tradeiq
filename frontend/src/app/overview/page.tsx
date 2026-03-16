@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useWealthDashboard } from "@/hooks/use-wealth";
 import { formatCurrency } from "@/lib/utils";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { WealthAllocationChart } from "@/components/wealth/WealthAllocationChart";
 import { WealthHealthCard } from "@/components/wealth/WealthHealthCard";
 import { WealthSummaryCards } from "@/components/wealth/WealthSummaryCards";
@@ -62,7 +63,7 @@ export default function OverviewPage() {
         </div>
 
         {/* Net Worth Hero */}
-        <Card>
+        <Card className="animate-fade-in-up">
           <CardContent className="p-6">
             <div className="flex items-baseline justify-between">
               <div>
@@ -92,21 +93,27 @@ export default function OverviewPage() {
         </Card>
 
         {/* Smart Alerts */}
-        <SmartAlertsCard />
+        <div className="animate-fade-in-up animate-fade-in-up-delay-1">
+          <SmartAlertsCard />
+        </div>
 
         {/* Summary cards */}
-        <WealthSummaryCards data={data} />
+        <div className="animate-fade-in-up animate-fade-in-up-delay-1">
+          <WealthSummaryCards data={data} />
+        </div>
 
         {/* Goals + Weekly Recap */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up animate-fade-in-up-delay-2">
           <GoalProgressCard />
           <WeeklyRecapCard />
         </div>
 
         {/* Net Worth History Chart */}
-        <NetWorthChart />
+        <div className="animate-fade-in-up animate-fade-in-up-delay-2">
+          <NetWorthChart />
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up animate-fade-in-up-delay-3">
           {/* Allocation chart */}
           <WealthAllocationChart allocation={data.allocation} currency={data.base_currency} />
 
