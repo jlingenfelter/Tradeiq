@@ -9,6 +9,9 @@ from app.models.market_data import AssetMetadata, PriceSnapshot
 from app.providers.market_data_provider import (
     MarketDataProvider, YFinanceProvider, Quote, AssetInfo,
 )
+from app.providers.crypto_price_provider import (
+    is_crypto_symbol, get_crypto_quotes, get_single_crypto_quote, get_crypto_metadata,
+)
 
 PRICE_CACHE_TTL = 300  # 5 minutes
 METADATA_CACHE_TTL = 86400  # 24 hours
@@ -82,8 +85,14 @@ def fetch_quote(symbol: str) -> Quote | None:
     cached = get_cached_quote(symbol)
     if cached:
         return cached
-    provider = get_provider()
-    quote = provider.get_quote(symbol)
+
+    # Route crypto symbols to CoinGecko
+    if is_crypto_symbol(symbol):
+        quote = get_single_crypto_quote(symbol)
+    else:
+        provider = get_provider()
+        quote = provider.get_quote(symbol)
+
     if quote:
         cache_quote(quote)
     return quote
@@ -100,9 +109,27 @@ def fetch_quotes(symbols: list[str]) -> dict[str, Quote]:
         else:
             uncached.append(symbol)
 
-    if uncached:
+    if not uncached:
+        return results
+
+    # Split into crypto and traditional symbols
+    crypto_symbols = [s for s in uncached if is_crypto_symbol(s)]
+    traditional_symbols = [s for s in uncached if not is_crypto_symbol(s)]
+
+    # Fetch crypto prices from CoinGecko
+    if crypto_symbols:
+        try:
+            crypto_quotes = get_crypto_quotes(crypto_symbols)
+            for sym, quote in crypto_quotes.items():
+                cache_quote(quote)
+                results[sym] = quote
+        except Exception:
+            pass
+
+    # Fetch traditional prices from yfinance
+    if traditional_symbols:
         provider = get_provider()
-        fresh = provider.get_quotes(uncached)
+        fresh = provider.get_quotes(traditional_symbols)
         for sym, quote in fresh.items():
             cache_quote(quote)
             results[sym] = quote
@@ -111,8 +138,12 @@ def fetch_quotes(symbols: list[str]) -> dict[str, Quote]:
 
 
 def fetch_and_store_metadata(db: Session, symbol: str) -> AssetMetadata | None:
-    provider = get_provider()
-    info = provider.get_asset_metadata(symbol)
+    # Route crypto to CoinGecko metadata
+    if is_crypto_symbol(symbol):
+        info = get_crypto_metadata(symbol)
+    else:
+        provider = get_provider()
+        info = provider.get_asset_metadata(symbol)
     if not info:
         return None
 

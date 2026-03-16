@@ -30,6 +30,8 @@ from app.api.tradier import router as tradier_router
 from app.api.crypto_wallet import router as crypto_wallet_router
 from app.api.moneybox import router as moneybox_router
 from app.api.kraken import router as kraken_router
+from app.api.coinbase import router as coinbase_router
+from app.api.binance import router as binance_router
 from app.api.goals import router as goals_router
 from app.api.recap import router as recap_router
 from app.api.insights import router as insights_router
@@ -115,6 +117,8 @@ app.include_router(tradier_router)
 app.include_router(crypto_wallet_router)
 app.include_router(moneybox_router)
 app.include_router(kraken_router)
+app.include_router(coinbase_router)
+app.include_router(binance_router)
 
 # Goals & gamification
 app.include_router(goals_router)

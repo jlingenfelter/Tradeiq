@@ -13,7 +13,7 @@ import { useConnections } from "@/hooks/use-analytics";
 import { api } from "@/lib/api";
 import { ArrowLeft, Check, Loader2, RefreshCw, Trash2, Wifi } from "lucide-react";
 
-type Broker = "trading212" | "alpaca" | "ibkr" | "ig" | "tradier" | "crypto" | "moneybox" | "kraken" | null;
+type Broker = "trading212" | "alpaca" | "ibkr" | "ig" | "tradier" | "crypto" | "moneybox" | "kraken" | "coinbase" | null;
 
 interface SyncResult {
   imported: number;
@@ -37,6 +37,7 @@ const BROKERS = [
   { id: "moneybox" as Broker, name: "Moneybox", desc: "Connect ISAs, SIPPs and general accounts", category: "broker" },
   { id: "crypto" as Broker, name: "Crypto Wallet", desc: "Read ETH or BTC wallet balances", category: "crypto" },
   { id: "kraken" as Broker, name: "Kraken", desc: "Import crypto spot balances via API", category: "crypto" },
+  { id: "coinbase" as Broker, name: "Coinbase", desc: "Import crypto balances via Advanced Trade API", category: "crypto" },
 ];
 
 export default function ConnectPage() {
@@ -585,6 +586,37 @@ export default function ConnectPage() {
                   Test Connection
                 </Button>
                 <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700" onClick={() => handleSync("/kraken/sync", { api_key: apiKey, api_secret: apiSecret })} disabled={!apiKey || !apiSecret || loading}>
+                  {loading ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Importing...</> : "Import Holdings"}
+                </Button>
+              </div>
+              {renderSyncResult()}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Coinbase */}
+        {selectedBroker === "coinbase" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Connect Coinbase</CardTitle>
+              <CardDescription>Enter your Coinbase Advanced Trade API key and secret</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {renderPortfolioSelector()}
+              <div className="space-y-2">
+                <Label>API Key</Label>
+                <Input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Coinbase API Key" />
+              </div>
+              <div className="space-y-2">
+                <Label>API Secret</Label>
+                <Input type="password" value={apiSecret} onChange={(e) => setApiSecret(e.target.value)} placeholder="Coinbase API Secret" />
+              </div>
+              {renderStatus()}
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => handleTest("/coinbase/test", { api_key: apiKey, api_secret: apiSecret })} disabled={!apiKey || !apiSecret || loading}>
+                  Test Connection
+                </Button>
+                <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700" onClick={() => handleSync("/coinbase/sync", { api_key: apiKey, api_secret: apiSecret })} disabled={!apiKey || !apiSecret || loading}>
                   {loading ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Importing...</> : "Import Holdings"}
                 </Button>
               </div>
