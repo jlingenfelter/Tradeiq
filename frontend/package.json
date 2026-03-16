@@ -6,15 +6,22 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "cap:init": "npx cap init TradeIQ com.tradeiq.app",
+    "cap:build": "next build && npx cap sync",
+    "cap:ios": "npx cap open ios",
+    "cap:android": "npx cap open android",
+    "cap:sync": "npx cap sync"
   },
   "dependencies": {
     "@capacitor/android": "^8.2.0",
+    "@capacitor/browser": "^8.0.2",
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0",
     "@capacitor/haptics": "^8.0.1",
     "@capacitor/ios": "^8.2.0",
     "@capacitor/keyboard": "^8.0.1",
+    "@capacitor/push-notifications": "^8.0.2",
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.1",
     "@radix-ui/react-dialog": "^1.1.15",

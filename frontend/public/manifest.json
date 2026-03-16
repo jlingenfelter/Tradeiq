@@ -1,11 +1,11 @@
 {
-  "name": "Wealth Copilot",
-  "short_name": "Wealth",
+  "name": "TradeIQ",
+  "short_name": "TradeIQ",
   "description": "AI-powered wealth tracking and portfolio monitoring",
-  "start_url": "/overview",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#4f46e5",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
     {
