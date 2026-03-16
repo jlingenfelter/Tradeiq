@@ -69,6 +69,35 @@ async def lifespan(app: FastAPI):
                 except Exception:
                     pass
         conn.commit()
+
+    # Grant admin/owner account full access (family tier)
+    from sqlalchemy.orm import Session as OrmSession
+    from app.models.user import User
+    from app.models.subscription import Subscription
+    db = OrmSession(bind=engine)
+    try:
+        admin_user = db.query(User).filter(User.email == "j.lingenfelter@live.co.uk").first()
+        if admin_user:
+            existing_sub = db.query(Subscription).filter(Subscription.user_id == admin_user.id).first()
+            if not existing_sub:
+                sub = Subscription(
+                    user_id=admin_user.id,
+                    stripe_customer_id="admin_override",
+                    stripe_subscription_id=None,
+                    tier="family",
+                    status="active",
+                )
+                db.add(sub)
+                db.commit()
+            elif existing_sub.tier != "family" or existing_sub.status != "active":
+                existing_sub.tier = "family"
+                existing_sub.status = "active"
+                db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
     yield
 
 
